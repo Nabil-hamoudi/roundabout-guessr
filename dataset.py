@@ -6,7 +6,7 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import cv2
 from pathlib import Path
-
+import random
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD  = (0.229, 0.224, 0.225)
 
@@ -54,19 +54,31 @@ class RoundAboutDataset(Dataset):
             return
 
         #Liste de tuples (img, pos)
+        #Pour le metric learning il faut (img1,img2,img3)
+        self.roundabouts = roundabouts
         self.elems = []
 
         for i in range(len(roundabouts)):
             for j in range(len(roundabouts[i])):
-                self.elems.append((roundabouts[i][j], roundabouts_positions[i][j]))
+                img_a = roundabouts[i][j]
+                self.elems.append((i, img_a))
 
     def __len__(self):
         return len(self.elems)
     
     def __getitem__(self, index):
-        img, pos = self.elems[index]
-        img = (img-IMAGENET_MEAN)/IMAGENET_STD
-        return torch.from_numpy(img).float(), torch.from_numpy(np.asarray(pos, np.float32))
+        i, img_a = self.elems[index]
+
+        img_b = random.choice(self.roundabouts[i])
+        other_idx = random.choice([x for j,x in enumerate(range(len(self.roundabouts))) if j!=i and len(self.roundabouts[j]) != 0])
+        img_c = random.choice(self.roundabouts[other_idx])
+
+        #img_a,img_b,img_c = self.elems[index]
+        img_a = (img_a-IMAGENET_MEAN)/IMAGENET_STD
+        img_b = (img_b-IMAGENET_MEAN)/IMAGENET_STD
+        img_c = (img_c-IMAGENET_MEAN)/IMAGENET_STD
+        return torch.from_numpy(img_a).float(), torch.from_numpy(img_b).float(), torch.from_numpy(img_c).float()
+        #return torch.from_numpy(img).float(), torch.from_numpy(np.asarray(pos, np.float32))
     
 if __name__ == "__main__":
     pos = get_roundabouts_pos("roundabouts.json")
