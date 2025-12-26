@@ -7,6 +7,9 @@ from albumentations.pytorch import ToTensorV2
 import cv2
 from pathlib import Path
 
+IMAGENET_MEAN = (0.485, 0.456, 0.406)
+IMAGENET_STD  = (0.229, 0.224, 0.225)
+
 def get_roundabouts_pos(path):
     with open(path) as f:
         json_file = json.load(f)
@@ -62,8 +65,8 @@ class RoundAboutDataset(Dataset):
     
     def __getitem__(self, index):
         img, pos = self.elems[index]
-
-        return img, pos
+        img = (img-IMAGENET_MEAN)/IMAGENET_STD
+        return torch.from_numpy(img).float(), torch.from_numpy(np.asarray(pos, np.float32))
     
 if __name__ == "__main__":
     pos = get_roundabouts_pos("roundabouts.json")
