@@ -14,9 +14,17 @@ def get_roundabouts_pos(path):
     coords = []
     for elem in json_file["features"]:
         #devrait pas arriver mais bon
-        if not "properties" in elem: continue
-        if not "center" in elem["properties"]: continue
-        coords.append(elem["properties"]["center"])
+        if not "geometry" in elem: continue
+        if not "coordinates" in elem["geometry"]: continue
+        #Hardcodé mgl
+        if elem["geometry"]["type"] != "LineString" :
+            coords.append([elem["geometry"]["coordinates"]])
+            continue
+        roundabout_coords = []
+        for coord in elem["geometry"]["coordinates"]:
+            roundabout_coords.append(coord)
+        #On met le centre de chaque image !! utile pour embed
+        coords.append(roundabout_coords)
     
     return coords
 
@@ -26,7 +34,7 @@ def load_images(nb_roundabouts):
     for roundabout_id in range(1,nb_roundabouts+1):
         roundabout_folder = "roundabout_"+str(roundabout_id)
         files = sorted(Path(roundabout_folder).glob("*.jpg"), key=lambda f: int(f.name.replace("streetview_","").rstrip(".jpg")))
-        all_images.append([cv2.imread(str(f), cv2.IMREAD_GRAYSCALE) for f in files])
+        all_images.append([cv2.imread(str(f), cv2.IMREAD_COLOR) for f in files])
     return all_images
 
 class RoundAboutDataset(Dataset):
@@ -47,7 +55,7 @@ class RoundAboutDataset(Dataset):
 
         for i in range(len(roundabouts)):
             for j in range(len(roundabouts[i])):
-                self.elems.append((roundabouts[i][j], roundabouts_positions[i]))
+                self.elems.append((roundabouts[i][j], roundabouts_positions[i][j]))
 
     def __len__(self):
         return len(self.elems)
