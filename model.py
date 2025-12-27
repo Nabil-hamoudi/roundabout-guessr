@@ -21,7 +21,8 @@ class BaseEmbed(nn.Module):
 
     def forward(self, x):
         #print(x.shape)
-        x = x.permute(0, 3, 1, 2)
+        #plus besoin on utilise TensorV2
+        #x = x.permute(0, 3, 1, 2)
         #print(x.shape)
         x = self.resnet(x)
         x = x[-1] #ça retourne toutes les features le gros fou

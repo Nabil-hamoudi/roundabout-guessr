@@ -10,6 +10,12 @@ import random
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD  = (0.229, 0.224, 0.225)
 
+compat_transform = A.Compose([
+    A.Resize(400, 600),
+    A.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
+    ToTensorV2()
+])
+
 def get_roundabouts_pos(path):
     with open(path) as f:
         json_file = json.load(f)
@@ -53,6 +59,14 @@ class RoundAboutTrainingDataset(Dataset):
             print("On handle pas les éléments non labelés ça va crash !")
             return
 
+        #Si on a malheureusement pas d'image compatible
+        #En vrai on devra sûrement faire ça pour toutes les images
+        #à voir !!
+        self.augment_transform = A.Compose([
+            A.HorizontalFlip(p=0.5),
+            A.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1, p=0.8),
+        ])
+
         #Liste de tuples (img, pos)
         #Pour le metric learning il faut (img1,img2,img3)
         self.roundabouts = roundabouts
@@ -69,15 +83,18 @@ class RoundAboutTrainingDataset(Dataset):
     def __getitem__(self, index):
         i, img_a = self.elems[index]
 
-        img_b = random.choice(self.roundabouts[i])
+        if len(self.roundabouts[i]) > 1:
+            img_b = random.choice([x for x in self.roundabouts[i] if id(x) != id(img_a)])
+        else:
+            img_b = self.augment_transform(image = img_a)["image"]
         other_idx = random.choice([x for j,x in enumerate(range(len(self.roundabouts))) if j!=i and len(self.roundabouts[j]) != 0])
         img_c = random.choice(self.roundabouts[other_idx])
 
         #img_a,img_b,img_c = self.elems[index]
-        img_a = (img_a-IMAGENET_MEAN)/IMAGENET_STD
-        img_b = (img_b-IMAGENET_MEAN)/IMAGENET_STD
-        img_c = (img_c-IMAGENET_MEAN)/IMAGENET_STD
-        return torch.from_numpy(img_a).float(), torch.from_numpy(img_b).float(), torch.from_numpy(img_c).float()
+        img_a = compat_transform(image = img_a)["image"]
+        img_b = compat_transform(image = img_b)["image"]
+        img_c = compat_transform(image = img_c)["image"]
+        return img_a,img_b,img_c
         #return torch.from_numpy(img).float(), torch.from_numpy(np.asarray(pos, np.float32))
 
 class RoundAboutInferenceDataset(Dataset):
@@ -103,5 +120,6 @@ if __name__ == "__main__":
     ds = RoundAboutTrainingDataset(imgs, pos)
 
     for elem in ds:
-        print(elem)
+        pass
+        #print(elem)
     print(pos)
