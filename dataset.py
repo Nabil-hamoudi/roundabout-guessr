@@ -40,7 +40,7 @@ def load_images(nb_roundabouts):
         all_images.append([cv2.imread(str(f), cv2.IMREAD_COLOR) for f in files])
     return all_images
 
-class RoundAboutDataset(Dataset):
+class RoundAboutTrainingDataset(Dataset):
     def __init__(self, roundabouts, roundabouts_positions):
         # Roundabouts liste de liste de liste d'images
         # ATTENTION c vite vachement lourd en mémoire
@@ -79,11 +79,28 @@ class RoundAboutDataset(Dataset):
         img_c = (img_c-IMAGENET_MEAN)/IMAGENET_STD
         return torch.from_numpy(img_a).float(), torch.from_numpy(img_b).float(), torch.from_numpy(img_c).float()
         #return torch.from_numpy(img).float(), torch.from_numpy(np.asarray(pos, np.float32))
+
+class RoundAboutInferenceDataset(Dataset):
+    def __init__(self, roundabouts):
+        self.roundabouts = roundabouts
+        self.roundabouts = roundabouts
+        self.elems = []
+
+        for i in range(len(roundabouts)):
+            for j in range(len(roundabouts[i])):
+                img_a = roundabouts[i][j]
+                self.elems.append((i, img_a))
+    def __len__(self):
+        return len(self.roundabouts)
     
+    def __getitem__(self, index):
+        i, img = self.elems[index]
+        return i, torch.from_numpy(img).float()
+
 if __name__ == "__main__":
     pos = get_roundabouts_pos("roundabouts.json")
     imgs = load_images(len(pos))
-    ds = RoundAboutDataset(imgs, pos)
+    ds = RoundAboutTrainingDataset(imgs, pos)
 
     for elem in ds:
         print(elem)

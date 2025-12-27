@@ -1,5 +1,6 @@
 import torch.nn as nn
 import timm
+import torch.nn.functional as F
 
 class BaseEmbed(nn.Module):
     """
@@ -32,5 +33,7 @@ class BaseEmbed(nn.Module):
         x = x.flatten(1)
 
         x = self.fc(x)
+
+        x = F.normalize(x, p=2, dim=1)
         #print(x.shape)
         return x

@@ -14,7 +14,7 @@ pos = get_roundabouts_pos("roundabouts.json")
 print("Chargement des images")
 imgs = load_images(len(pos))
 
-dataset = RoundAboutDataset(imgs, pos)
+dataset = RoundAboutTrainingDataset(imgs, pos)
 
 model = BaseEmbed().to(DEVICE)
 
