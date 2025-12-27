@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader
 import math
 from model import *
 from dataset import *
+from tqdm import tqdm
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -21,30 +22,30 @@ def create_database(imgs, model):
     db = {}
     cur_inf = 0
     tot = 9351 #j'hardcode oui et alors
+    pbar = tqdm(range(len(imgs)), desc=f"Création", unit="rond pts", leave=False)
     with torch.no_grad():
-        for i in range(len(imgs)):
+        for i in pbar:
             db[i] = []
             for img in imgs[i]:
-                img = torch.from_numpy(img).float().to(DEVICE)
+                img = compat_transform(image = img)["image"]
+                img = img.to(DEVICE)
                 #Comme on a pas utilisé de loader on doit simuler le batch
                 img = img.unsqueeze(0)
+                #img = compat_transform(image = img)
                 vec = model(img)
                 db[i].append(vec.detach().cpu())
                 cur_inf += 1
-                per = cur_inf/tot
-                if math.floor(per*100) % 10 == 0:
-                    print(per)
 
     return db
 
 def get_roundabout(db, img, model):
     model.eval()
-
-    img = torch.from_numpy(img).float().to(DEVICE)
+    img = compat_transform(image = img)["image"]
+    img = img.to(DEVICE)
     #Comme on a pas utilisé de loader on doit simuler le batch
     img = img.unsqueeze(0)
     with torch.no_grad():
-        
+        #img = compat_transform(image = img)
         vec = model(img)
 
     closest_roundabout = -1
