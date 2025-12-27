@@ -71,11 +71,11 @@ if __name__ == "__main__":
     model = BaseEmbed().to(DEVICE)
     #On peut aussi db = torch.load(embeddings_db.pt)
     db = create_database(imgs, model)
-
+    #db = torch.load("embeddings_db.pt")
     torch.save(db, "embeddings_db.pt")
         
-
-    img = imgs[201][0]
+    imgs_val = load_images(len(pos), "val")
+    img = imgs_val[262][0]
 
     print(get_roundabout(db, img, model))
 

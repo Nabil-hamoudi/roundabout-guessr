@@ -31,11 +31,11 @@ def get_roundabouts_pos(path):
     
     return coords
 
-def load_images(nb_roundabouts):
+def load_images(nb_roundabouts, path = "data"):
     # la fonction part du principe qu'on est en jpg par contre
     all_images = []
     for roundabout_id in range(1,nb_roundabouts+1):
-        roundabout_folder = "data/roundabout_"+str(roundabout_id)
+        roundabout_folder = path + "/roundabout_"+str(roundabout_id)
         files = sorted(Path(roundabout_folder).glob("*.jpg"), key=lambda f: int(f.name.replace("streetview_","").rstrip(".jpg")))
         all_images.append([cv2.imread(str(f), cv2.IMREAD_COLOR) for f in files])
     return all_images
