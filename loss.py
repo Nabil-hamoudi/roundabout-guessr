@@ -14,6 +14,8 @@ class GeoTripletLoss(nn.Module):
         d_ab = F.pairwise_distance(img_a, img_b)
         d_ac = F.pairwise_distance(img_a, img_c)
 
+        
+
         d_coord = F.pairwise_distance(pos_a, pos_c)
 
         #On ajoute la distance dans la margin !
