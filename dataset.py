@@ -7,6 +7,7 @@ from albumentations.pytorch import ToTensorV2
 import cv2
 from pathlib import Path
 import random
+import math
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD  = (0.229, 0.224, 0.225)
 
@@ -15,6 +16,15 @@ compat_transform = A.Compose([
     A.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
     ToTensorV2()
 ])
+
+def long_lat_to_km(long,lat):
+    #formule : 111.11km = 1° lat
+    #          111.11 * cos(lat) = 1° long
+    lat_km = 111.11*lat
+    long_km = 111.11*math.cos(lat)*long
+
+    return (long_km,lat_km)
+
 
 def get_roundabouts_pos(path):
     with open(path) as f:
@@ -67,9 +77,22 @@ class RoundAboutTrainingDataset(Dataset):
             A.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1, p=0.8),
         ])
 
+        self.train_transform = A.Compose([
+            A.RandomResizedCrop(height=400, width=600, scale=(0.8, 1.0), p=1.0),
+            A.HorizontalFlip(p=0.5),
+            A.OneOf([
+                A.RandomBrightnessContrast(brightness_limit=0.3, contrast_limit=0.3, p=1.0),
+                A.HueSaturationValue(hue_shift_limit=20, sat_shift_limit=30, val_shift_limit=20, p=1.0),
+                A.CLAHE(clip_limit=4.0, p=1.0),
+            ], p=0.8),
+            A.CoarseDropout(max_holes=8, max_height=32, max_width=32, p=0.5),
+            A.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
+            ToTensorV2(),
+        ])
         #Liste de tuples (img, pos)
         #Pour le metric learning il faut (img1,img2,img3)
         self.roundabouts = roundabouts
+        self.positions = roundabouts_positions
         self.elems = []
 
         for i in range(len(roundabouts)):
@@ -91,10 +114,14 @@ class RoundAboutTrainingDataset(Dataset):
         img_c = random.choice(self.roundabouts[other_idx])
         pos_a = self.positions[i][j] if len(self.positions[i]) > j else self.positions[i][0]
         pos_c = self.positions[other_idx][0]
+
+        pos_a = long_lat_to_km(*pos_a)
+        pos_c = long_lat_to_km(*pos_c)
+        
         #img_a,img_b,img_c = self.elems[index]
-        img_a = compat_transform(image = img_a)["image"]
-        img_b = compat_transform(image = img_b)["image"]
-        img_c = compat_transform(image = img_c)["image"]
+        img_a = self.train_transform(image = img_a)["image"]
+        img_b = self.train_transform(image = img_b)["image"]
+        img_c = self.train_transform(image = img_c)["image"]
 
         pos_a = torch.tensor(pos_a, dtype = torch.float32)
         pos_c = torch.tensor(pos_c, dtype = torch.float32)
@@ -125,6 +152,5 @@ if __name__ == "__main__":
     ds = RoundAboutTrainingDataset(imgs, pos)
 
     for elem in ds:
-        pass
-        #print(elem)
+        print(elem)
     print(pos)
