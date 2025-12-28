@@ -75,13 +75,13 @@ class RoundAboutTrainingDataset(Dataset):
         for i in range(len(roundabouts)):
             for j in range(len(roundabouts[i])):
                 img_a = roundabouts[i][j]
-                self.elems.append((i, img_a))
+                self.elems.append((i, img_a, j))
 
     def __len__(self):
         return len(self.elems)
     
     def __getitem__(self, index):
-        i, img_a = self.elems[index]
+        i, img_a, j = self.elems[index]
 
         if len(self.roundabouts[i]) > 1:
             img_b = random.choice([x for x in self.roundabouts[i] if id(x) != id(img_a)])
@@ -89,12 +89,17 @@ class RoundAboutTrainingDataset(Dataset):
             img_b = self.augment_transform(image = img_a)["image"]
         other_idx = random.choice([x for j,x in enumerate(range(len(self.roundabouts))) if j!=i and len(self.roundabouts[j]) != 0])
         img_c = random.choice(self.roundabouts[other_idx])
-
+        pos_a = self.positions[i][j] if len(self.positions[i]) > j else self.positions[i][0]
+        pos_c = self.positions[other_idx][0]
         #img_a,img_b,img_c = self.elems[index]
         img_a = compat_transform(image = img_a)["image"]
         img_b = compat_transform(image = img_b)["image"]
         img_c = compat_transform(image = img_c)["image"]
-        return img_a,img_b,img_c
+
+        pos_a = torch.tensor(pos_a, dtype = torch.float32)
+        pos_c = torch.tensor(pos_c, dtype = torch.float32)
+
+        return img_a,img_b,img_c, pos_a, pos_c
         #return torch.from_numpy(img).float(), torch.from_numpy(np.asarray(pos, np.float32))
 
 class RoundAboutInferenceDataset(Dataset):

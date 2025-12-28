@@ -8,6 +8,8 @@ from model import *
 from embed_database import *
 import random
 
+from loss import GeoTripletLoss
+
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 print("Chargement du JSON rond pts")
@@ -57,7 +59,7 @@ model = BaseEmbed().to(DEVICE)
 #Gérer la validation après déjà je veux faire en sorte que ça forward
 train_loader = DataLoader(dataset, batch_size=8)
 
-criterion = nn.TripletMarginLoss()
+criterion = GeoTripletLoss()
 optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
 for epoch in range(1,11):
@@ -68,15 +70,16 @@ for epoch in range(1,11):
 
     pbar = tqdm(train_loader, desc=f"Epoch {epoch}", unit="batch", leave=False)
 
-    for img_a, img_b, img_c in pbar:
+    for img_a, img_b, img_c, pos_a, pos_c in pbar:
         img_a, img_b, img_c = img_a.to(DEVICE), img_b.to(DEVICE), img_c.to(DEVICE)
+        pos_a, pos_c = pos_a.to(DEVICE), pos_c.to(DEVICE)
         optimizer.zero_grad()
         #img a = l'ancre, b = l'image actuelle, c = négative
         pred_a = model(img_a)
         pred_b = model(img_b)
         pred_c = model(img_c)
 
-        loss = criterion(pred_a, pred_b, pred_c)
+        loss = criterion(pred_a, pred_b, pred_c, pos_a, pos_c)
 
         loss.backward()
         optimizer.step()
