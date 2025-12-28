@@ -104,20 +104,20 @@ class RoundAboutTrainingDataset(Dataset):
 
 class RoundAboutInferenceDataset(Dataset):
     def __init__(self, roundabouts):
-        self.roundabouts = roundabouts
-        self.roundabouts = roundabouts
         self.elems = []
-
+        self.r_len = 0
         for i in range(len(roundabouts)):
             for j in range(len(roundabouts[i])):
                 img_a = roundabouts[i][j]
                 self.elems.append((i, img_a))
+                self.r_len += 1
     def __len__(self):
-        return len(self.roundabouts)
+        return self.r_len
     
     def __getitem__(self, index):
         i, img = self.elems[index]
-        return i, torch.from_numpy(img).float()
+        img = compat_transform(image=img)["image"]
+        return i, img
 
 if __name__ == "__main__":
     pos = get_roundabouts_pos("roundabouts.json")

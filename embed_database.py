@@ -22,20 +22,26 @@ def create_database(imgs, model):
     db = {}
     cur_inf = 0
     tot = 9351 #j'hardcode oui et alors
-    pbar = tqdm(range(len(imgs)), desc=f"Création", unit="rond pts", leave=False)
-    with torch.no_grad():
-        for i in pbar:
-            db[i] = []
-            for img in imgs[i]:
-                img = compat_transform(image = img)["image"]
-                img = img.to(DEVICE)
-                #Comme on a pas utilisé de loader on doit simuler le batch
-                img = img.unsqueeze(0)
-                #img = compat_transform(image = img)
-                vec = model(img)
-                db[i].append(vec.detach().cpu())
-                cur_inf += 1
 
+    dataset = RoundAboutInferenceDataset(imgs)
+
+    loader = DataLoader(dataset, batch_size=128)
+
+    pbar = tqdm(loader, desc=f"Création", unit="batch", leave=False)
+    with torch.no_grad():
+        for i_batch, img_batch in pbar:
+
+            img_batch = img_batch.to(DEVICE)
+
+            vecs = model(img_batch).detach().cpu()
+
+            for idx,vec in zip(i_batch, vecs):
+                i = idx.item()
+
+                if i not in db:
+                    db[i] = []
+                
+                db[i].append(vec.unsqueeze(0))
     return db
 
 def get_roundabout(db, img, model):
