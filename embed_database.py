@@ -5,6 +5,7 @@ import math
 from model import *
 from dataset import *
 from tqdm import tqdm
+from hierarchical_kmeans import HKMeans
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -19,29 +20,31 @@ def create_database(imgs, model):
     -> C'est super long, on verra plus tard pour opti.
     -> ça a l'avantage d'être super simple !
     """
-    db = {}
-    cur_inf = 0
-    tot = 9351 #j'hardcode oui et alors
+    ids = []
+    elems = []
 
     dataset = RoundAboutInferenceDataset(imgs)
 
     loader = DataLoader(dataset, batch_size=128)
 
-    pbar = tqdm(loader, desc=f"Création", unit="batch", leave=False)
+    pbar = tqdm(loader, desc=f"Calcul des embeds", unit="batch", leave=False)
     with torch.no_grad():
         for i_batch, img_batch in pbar:
-
             img_batch = img_batch.to(DEVICE)
-
-            vecs = model(img_batch).detach().cpu()
+            vecs = model(img_batch).detach().cpu().numpy()
 
             for idx,vec in zip(i_batch, vecs):
                 i = idx.item()
 
-                if i not in db:
-                    db[i] = []
-                
-                db[i].append(vec.unsqueeze(0))
+                ids.append(i)
+                elems.append(vec)
+    
+    print("Création des clusters")
+    #print(elems)
+    ids = np.array(ids)
+    elems = np.array(elems)
+    db = HKMeans(elems, ids, 5, 10)
+
     return db
 
 def get_roundabout(db, img, model):
@@ -54,22 +57,9 @@ def get_roundabout(db, img, model):
         #img = compat_transform(image = img)
         vec = model(img)
 
-    closest_roundabout = -1
-    min_dist = float('inf')
-
-    for roundabout_id in db:
-        roundabout_vectors = db[roundabout_id]
-        
-        for r_vec in roundabout_vectors:
-            r_vec = r_vec.to(DEVICE)
-
-            dist = torch.norm(vec - r_vec)
-            
-            if dist < min_dist:
-                closest_roundabout = roundabout_id
-                min_dist = dist
-    
-    return closest_roundabout
+    vec = vec.detach().cpu().numpy()
+    #vec = torch.
+    return db.find_elem(vec)
 
 if __name__ == "__main__":
     pos = get_roundabouts_pos("roundabouts.json")
