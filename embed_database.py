@@ -6,7 +6,7 @@ from model import *
 from dataset import *
 from tqdm import tqdm
 from hierarchical_kmeans import HKMeans
-
+import cv2
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def create_database(imgs, model):
@@ -23,9 +23,9 @@ def create_database(imgs, model):
     ids = []
     elems = []
 
-    dataset = RoundAboutInferenceDataset(imgs)
+    dataset = ImagesInferenceDataset(imgs)
 
-    loader = DataLoader(dataset, batch_size=128)
+    loader = DataLoader(dataset, batch_size=16)
 
     pbar = tqdm(loader, desc=f"Calcul des embeds", unit="batch", leave=False)
     with torch.no_grad():
@@ -38,7 +38,11 @@ def create_database(imgs, model):
 
                 ids.append(i)
                 elems.append(vec)
-    
+    a = {
+        "ids" : ids,
+        "elems" : elems
+    }
+    torch.save(a, 'embeddings_db.pt')
     print("Création des clusters")
     #print(elems)
     ids = np.array(ids)
@@ -47,7 +51,7 @@ def create_database(imgs, model):
 
     return db
 
-def get_roundabout(db, img, model):
+def get_closest(db, img, model):
     model.eval()
     img = compat_transform(image = img)["image"]
     img = img.to(DEVICE)
@@ -62,19 +66,25 @@ def get_roundabout(db, img, model):
     return db.find_elem(vec)
 
 if __name__ == "__main__":
-    pos = get_roundabouts_pos("roundabouts.json")
-    imgs = load_images(len(pos))
+    pos = get_images_pos("yo/coordinates.json")
+    imgs = get_images_paths()
 
     model = BaseEmbed().to(DEVICE)
     #On peut aussi db = torch.load(embeddings_db.pt)
-    db = create_database(imgs, model)
+    #db = create_database(imgs, model)
     #db = torch.load("embeddings_db.pt")
-    torch.save(db, "embeddings_db.pt")
-        
-    imgs_val = load_images(len(pos), "val")
-    img = imgs_val[262][0]
+    #torch.save(db, "embeddings_db.pt")
 
-    print(get_roundabout(db, img, model))
+    #a = torch.load("embeddings_db.pt", weights_only=False)
+    #ids = np.array(a["ids"])
+    #elems = np.array(a["elems"])
+    db = torch.load("embeddings_db.pt", weights_only=False)
+    #model = BaseEmbed().to(DEVICE)   
+    
+    
+    img = cv2.imread("./val/roundabout_263/streetview_1.jpg", cv2.IMREAD_COLOR)
+
+    print(get_closest(db, img, model))
 
 
 

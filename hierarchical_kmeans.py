@@ -36,7 +36,7 @@ class HKMeans:
         #On a soit un gros pb d'entraînement, soit un pb de dataset
         #Il faut regarder quand on aura un dataset
         # (et pas du bruit)
-        kmeans = KMeans(self.k, n_init=10)
+        kmeans = KMeans(self.k, n_init=10, random_state=67)
         labels = kmeans.fit_predict(elems)
 
         for i in range(self.k):
@@ -53,6 +53,9 @@ class HKMeans:
         #parcours d'arbre classique
         cur = self.root
 
+        if len(cur.children) == 0:
+            return cur.ids, cur.elems
+
         while len(cur.children) > 0:
 
             closest = -1
@@ -63,29 +66,33 @@ class HKMeans:
                 if d < min_dist:
                     min_dist = d
                     closest = elem
-            
+            if closest == -1: break
             cur = closest
         
         return closest.ids, closest.elems
 
-    def find_elem(self, query):
-        #on devrait vectoriser j'avoue j'ai la flemme là
+    def find_elem(self, query, top_k=5):
+        """
+        Trouve les Top-K éléments les plus proches dans le cluster identifié.
+        """
+
+        real_k = top_k
+
         ids, elems = self.find_cluster(query)
+        distances = np.linalg.norm(elems - query, axis=1)
+        k = min(real_k, len(ids))
+        top_indices = np.argpartition(distances, k-1)[:k]
+        top_indices = top_indices[np.argsort(distances[top_indices])]
+        vu = set()
+        print(top_indices)
+        results = []
+        for idx in top_indices:
+            if not ids[idx] in vu:
+                results.append({
+                    "id": ids[idx],
+                    "distance": distances[idx]
+                })
+            
+        return results
 
-        closest = -1
-        min_dist = float('inf')
 
-        for i in range(len(ids)):
-            d = np.linalg.norm(query - elems[i])
-
-            if d < min_dist:
-                closest = i
-                min_dist = d
-        
-        return ids[closest]
-
-
-
-
-
-        
