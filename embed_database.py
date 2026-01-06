@@ -25,7 +25,7 @@ def create_database(imgs, model):
 
     dataset = ImagesInferenceDataset(imgs)
 
-    loader = DataLoader(dataset, batch_size=16)
+    loader = DataLoader(dataset, batch_size=8)
 
     pbar = tqdm(loader, desc=f"Calcul des embeds", unit="batch", leave=False)
     with torch.no_grad():
@@ -70,21 +70,20 @@ if __name__ == "__main__":
     imgs = get_images_paths()
 
     model = BaseEmbed().to(DEVICE)
+    model.load_state_dict(torch.load("model_epoch_4.pt"))
     #On peut aussi db = torch.load(embeddings_db.pt)
     #db = create_database(imgs, model)
     #db = torch.load("embeddings_db.pt")
     #torch.save(db, "embeddings_db.pt")
 
-    #a = torch.load("embeddings_db.pt", weights_only=False)
-    #ids = np.array(a["ids"])
-    #elems = np.array(a["elems"])
-    db = torch.load("embeddings_db.pt", weights_only=False)
+    a = torch.load("embeddings_db.pt", weights_only=False)
+    ids = np.array(a["ids"])
+    elems = np.array(a["elems"])
+    db = HKMeans(elems, ids, 5, 10)
     #model = BaseEmbed().to(DEVICE)   
     
     
     img = cv2.imread("./val/roundabout_263/streetview_1.jpg", cv2.IMREAD_COLOR)
 
     print(get_closest(db, img, model))
-
-
 

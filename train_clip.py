@@ -4,7 +4,7 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader, Subset
 from tqdm import tqdm
 from dataset import *
-from model import *
+from model2 import *
 from embed_database import *
 import random
 from torch.optim.lr_scheduler import LinearLR
@@ -19,14 +19,20 @@ def model_validation(model, val_imgs, criterion):
     pbar = tqdm(val_imgs, desc=f"Validation", unit="query", leave=False)
 
     with torch.no_grad():
-        for img_a, img_b, pos_a in pbar:
-            img_a, img_b = img_a.to(DEVICE), img_b.to(DEVICE)
-            pos_a = pos_a.to(DEVICE)
+        for img, pos in pbar:
+            img = img.to(DEVICE)
+            pos = pos.to(DEVICE)
+            B = img.size(0)
             #img a = l'ancre, b = l'image actuelle, c = négative
-            pred_a = model(img_a)
-            pred_b = model(img_b)
+            pred_img, pred_pos = model(img, pos)
 
-            loss = criterion(pred_a, pred_b, pos_a)
+            logits = pred_img @ pred_pos.T
+            targets = torch.arange(B, device=DEVICE)
+
+            loss_i2p = criterion(logits, targets)
+            loss_p2i = criterion(logits.T, targets)
+            loss = (loss_i2p + loss_p2i) / 2
+            
             #print(loss.item())
             pbar.set_postfix({"loss": f"{loss.item():.4f}"})
             total_loss += loss.item()
@@ -41,24 +47,24 @@ if __name__ == "__main__":
     imgs = get_images_paths()
 
 
-    dataset = ImagesTrainingDataset(imgs, pos)
+    dataset = ImagesPosDataset(imgs, pos)
     generator1 = torch.Generator().manual_seed(42)
     train_indices, val_indices = torch.utils.data.random_split(
         range(len(dataset)), 
-        [0.95, 0.05], 
+        [0.99, 0.01], 
         generator=generator1
     )
 
     train_dataset = Subset(dataset, train_indices.indices)
     val_dataset = Subset(dataset, val_indices.indices)
 
-    model = BaseEmbed().to(DEVICE)
-    model.load_state_dict(torch.load("save.pt"))
+    model = MixedEncoder().to(DEVICE)
+    #model.load_state_dict(torch.load("save.pt"))
 
     #Gérer la validation après déjà je veux faire en sorte que ça forward
-    train_loader = DataLoader(train_dataset, batch_size=24, num_workers=8, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=24, num_workers=8)
-    criterion = BatchHardLoss()
+    train_loader = DataLoader(train_dataset, batch_size=24, num_workers=1, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=24, num_workers=1)
+    criterion = nn.CrossEntropyLoss()#BatchHardLoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
     for epoch in range(1,101):
@@ -69,15 +75,21 @@ if __name__ == "__main__":
 
         pbar = tqdm(train_loader, desc=f"Epoch {epoch}", unit="batch", leave=False)
 
-        for img_a, img_b, pos_a in pbar:
-            img_a, img_b= img_a.to(DEVICE), img_b.to(DEVICE)
-            pos_a = pos_a.to(DEVICE)
+        for img, pos in pbar:
+            img = img.to(DEVICE)
+            pos = pos.to(DEVICE)
+            B = img.size(0)
             optimizer.zero_grad()
             #img a = l'ancre, b = l'image actuelle, c = négative
-            pred_a = model(img_a)
-            pred_b = model(img_b)
+            pred_img, pred_pos = model(img, pos)
 
-            loss = criterion(pred_a, pred_b, pos_a)
+            logits = pred_img @ pred_pos.T
+            targets = torch.arange(B, device=DEVICE)
+
+            loss_i2p = criterion(logits, targets)
+            loss_p2i = criterion(logits.T, targets)
+            loss = (loss_i2p + loss_p2i) / 2
+
 
             loss.backward()
             optimizer.step()
