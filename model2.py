@@ -10,7 +10,7 @@ class LocationEncoder(nn.Module):
         self.layer_rff = rff.layers.GaussianEncoding(
                     sigma=10, 
                     input_size=2, 
-                    encoded_size=512
+                    encoded_size=256
         )
 
         self.mlp = nn.Sequential(
