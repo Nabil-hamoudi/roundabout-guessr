@@ -1,3 +1,4 @@
+import rff
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -5,20 +6,26 @@ import torch.nn.functional as F
 class LocationEncoder(nn.Module):
     def __init__(self):
         super(LocationEncoder, self).__init__()
-        self.proj = nn.Linear(2, 512)  # pas rff encore
+
+        self.layer_rff = rff.layers.GaussianEncoding(
+                    sigma=10, 
+                    input_size=2, 
+                    encoded_size=512
+        )
 
         self.mlp = nn.Sequential(
             nn.Linear(512, 512),
+            nn.BatchNorm1d(512),
             nn.ReLU(),
             nn.Linear(512, 512),
+            nn.BatchNorm1d(512),
             nn.ReLU(),
             nn.Linear(512, 512)
         )
 
     def forward(self, x):
         x = torch.deg2rad(x)
-        x = self.proj(x)
-        x = torch.sin(x)
+        x = self.layer_rff(x)
         x = self.mlp(x)
         x = F.normalize(x, p=2, dim=1)
         return x
@@ -51,10 +58,9 @@ class MixedEncoder(nn.Module):
         super(MixedEncoder, self).__init__()
         self.image_encoder = ImageEncoder()
         self.location_encoder = LocationEncoder()
+        self.logit_scale = nn.Parameter(torch.ones([]) * 2.6592)
 
     def forward(self, img, loc):
         img_embed = self.image_encoder(img)
         loc_embed = self.location_encoder(loc)
-        img_embed = F.normalize(img_embed, p=2, dim=1)
-        loc_embed = F.normalize(loc_embed, p=2, dim=1)
-        return img_embed, loc_embed
+        return img_embed, loc_embed, self.logit_scale.exp()

@@ -121,9 +121,10 @@ class ImagesInferenceDataset(Dataset):
         return index, img
     
 class ImagesPosDataset(Dataset):
-    def __init__(self, images_paths, images_positions):
+    def __init__(self, images_paths, images_positions, want_index = False):
         self.images_paths = images_paths
         self.positions = images_positions
+        self.want_index = want_index
 
         #pas d'augmentations pour l'instant on regarde après !!
 
@@ -135,6 +136,8 @@ class ImagesPosDataset(Dataset):
         img = compat_transform(image=img)["image"]
         pos = self.positions[index]
         pos = torch.tensor(pos, dtype=torch.float32)
+        if self.want_index:
+            return img, pos, index
         return img, pos
 
 if __name__ == "__main__":

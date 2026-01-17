@@ -32,7 +32,7 @@ def model_validation(model, val_imgs, criterion):
             loss_i2p = criterion(logits, targets)
             loss_p2i = criterion(logits.T, targets)
             loss = (loss_i2p + loss_p2i) / 2
-            
+
             #print(loss.item())
             pbar.set_postfix({"loss": f"{loss.item():.4f}"})
             total_loss += loss.item()
@@ -62,8 +62,8 @@ if __name__ == "__main__":
     #model.load_state_dict(torch.load("save.pt"))
 
     #Gérer la validation après déjà je veux faire en sorte que ça forward
-    train_loader = DataLoader(train_dataset, batch_size=24, num_workers=1, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=24, num_workers=1)
+    train_loader = DataLoader(train_dataset, batch_size=24, num_workers=2, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=24, num_workers=2)
     criterion = nn.CrossEntropyLoss()#BatchHardLoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
@@ -81,9 +81,9 @@ if __name__ == "__main__":
             B = img.size(0)
             optimizer.zero_grad()
             #img a = l'ancre, b = l'image actuelle, c = négative
-            pred_img, pred_pos = model(img, pos)
+            pred_img, pred_pos, scale = model(img, pos)
 
-            logits = pred_img @ pred_pos.T
+            logits = (pred_img @ pred_pos.T) * scale
             targets = torch.arange(B, device=DEVICE)
 
             loss_i2p = criterion(logits, targets)
