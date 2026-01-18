@@ -1,23 +1,26 @@
-import rff
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import rff
 
 class LocationEncoder(nn.Module):
     def __init__(self):
         super(LocationEncoder, self).__init__()
 
-        self.layer_rff = rff.layers.GaussianEncoding(
-                    sigma=10, 
-                    input_size=2, 
-                    encoded_size=256
-        )
+        sigmas = [1.0, 10.0, 100.0]
+        
+        self.rff_layers = nn.ModuleList([
+            rff.layers.GaussianEncoding(sigma=s, input_size=2, encoded_size=256)
+            for s in sigmas
+        ])
+
+        input_dim = len(sigmas) * 256 * 2 
 
         self.mlp = nn.Sequential(
-            nn.Linear(512, 512),
-            nn.BatchNorm1d(512),
+            nn.Linear(input_dim, 768),
+            nn.BatchNorm1d(768),
             nn.ReLU(),
-            nn.Linear(512, 512),
+            nn.Linear(768, 512),
             nn.BatchNorm1d(512),
             nn.ReLU(),
             nn.Linear(512, 512)
@@ -25,13 +28,16 @@ class LocationEncoder(nn.Module):
 
     def forward(self, x):
         x = torch.deg2rad(x)
-        x = self.layer_rff(x)
+        
+        embeddings = [layer(x) for layer in self.rff_layers]
+        
+        x = torch.cat(embeddings, dim=1) 
+        
         x = self.mlp(x)
         x = F.normalize(x, p=2, dim=1)
         return x
-
 class ImageEncoder(nn.Module):
-    def __init__(self, frozen_backbone=False):
+    def __init__(self):
         super().__init__()
 
         self.backbone = torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14')
