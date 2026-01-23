@@ -1,4 +1,5 @@
 import json
+from matplotlib import transforms
 import torch
 from torch.utils.data import Dataset
 import numpy as np
@@ -121,10 +122,36 @@ class ImagesInferenceDataset(Dataset):
         return index, img
     
 class ImagesPosDataset(Dataset):
-    def __init__(self, images_paths, images_positions, want_index = False):
+    def __init__(self, images_paths, images_positions, want_index = False, is_train=False):
         self.images_paths = images_paths
         self.positions = images_positions
-        self.want_index = want_index
+        self.want_index = want_index  
+        self.is_train = is_train
+        self.noise_std = 0.0001
+        self.train_transform = A.Compose([
+            A.Resize(700, 1274),
+            A.ImageCompression(quality_lower=60, quality_upper=100, p=0.3),
+            A.Compose([
+                A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.5),
+                A.HueSaturationValue(hue_shift_limit=10, sat_shift_limit=20, val_shift_limit=10, p=0.3),
+            ], p=0.8),
+            
+            A.OneOf([
+                A.GaussianBlur(blur_limit=(3, 5)),
+                A.GaussNoise(var_limit=(10.0, 50.0)),
+                A.ISONoise(),
+            ], p=0.2),
+
+            A.CoarseDropout(
+                max_holes=8, max_height=16, max_width=16, 
+                min_holes=1, min_height=8, min_width=8, 
+                fill_value=0, p=0.2
+            ),
+
+            A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+            
+            ToTensorV2()
+        ])
 
         #pas d'augmentations pour l'instant on regarde après !!
 
@@ -133,9 +160,26 @@ class ImagesPosDataset(Dataset):
     
     def __getitem__(self, index):
         img = cv2.imread(str(self.images_paths[index]), cv2.IMREAD_COLOR)
-        img = compat_transform(image=img)["image"]
-        pos = self.positions[index]
-        pos = torch.tensor(pos, dtype=torch.float32)
+        if self.is_train:
+            img = self.train_transform(image=img)["image"]
+        else:
+            img = compat_transform(image=img)["image"]
+
+        raw_pos = self.positions[index]
+        
+        lat = raw_pos[0]
+        lon = raw_pos[1]
+        #print(self.is_train)
+        #ajout bruit gaussien
+        if self.is_train:
+            lat += np.random.randn() * self.noise_std
+            lon += np.random.randn() * self.noise_std
+            
+            #on reste dans les bornes
+            lat = np.clip(lat, -90, 90)
+            lon = np.clip(lon, -180, 180)
+
+        pos = torch.tensor([lat, lon], dtype=torch.float32)
         if self.want_index:
             return img, pos, index
         return img, pos
