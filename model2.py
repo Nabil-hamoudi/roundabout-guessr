@@ -2,16 +2,37 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import rff
+import copy
+
+# Constants
+A1 = 1.340264
+A2 = -0.081106
+A3 = 0.000893
+A4 = 0.003796
+SF = 66.50336
+
+def equal_earth_projection(L):
+    latitude = L[:, 0]
+    longitude = L[:, 1]
+    latitude_rad = torch.deg2rad(latitude)
+    longitude_rad = torch.deg2rad(longitude)
+    sin_theta = (torch.sqrt(torch.tensor(3.0)) / 2) * torch.sin(latitude_rad)
+    theta = torch.asin(sin_theta)
+    denominator = 3 * (9 * A4 * theta**8 + 7 * A3 * theta**6 + 3 * A2 * theta**2 + A1)
+    x = (2 * torch.sqrt(torch.tensor(3.0)) * longitude_rad * torch.cos(theta)) / denominator
+    y = A4 * theta**9 + A3 * theta**7 + A2 * theta**3 + A1 * theta
+    return (torch.stack((x, y), dim=1) * SF) / 180
+
 
 class LocationEncoder(nn.Module):
     def __init__(self):
         super(LocationEncoder, self).__init__()
 
-        sigmas = [1.0, 16.0, 256.0]
+        sigmas = [1.0, 16.0,24.0, 256.0]
         embed_dim = 256*2
         
         self.rff_layers = nn.ModuleList([
-            rff.layers.GaussianEncoding(sigma=s, input_size=3, encoded_size=256)
+            rff.layers.GaussianEncoding(sigma=s, input_size=2, encoded_size=256)
             for s in sigmas
         ])
 
@@ -31,7 +52,10 @@ class LocationEncoder(nn.Module):
         )
 
         self.final_proj = nn.Sequential(
-            nn.Linear(embed_dim*3, embed_dim*2),
+            nn.Linear(embed_dim*4, embed_dim*4),
+            nn.LayerNorm(embed_dim*4),
+            nn.GELU(),
+            nn.Linear(embed_dim*4, embed_dim*2),
             nn.LayerNorm(embed_dim*2),
             nn.GELU(),
             nn.Linear(embed_dim*2, embed_dim),
@@ -41,16 +65,9 @@ class LocationEncoder(nn.Module):
         )
 
     def forward(self, x):
-        
-        lat, lon = torch.deg2rad(x[:, 0]), torch.deg2rad(x[:, 1])
-        
-        #en coo sphériques
-        sx = torch.cos(lat) * torch.cos(lon)
-        sy = torch.cos(lat) * torch.sin(lon)
-        sz = torch.sin(lat)
-        
-        sphere_coords = torch.stack([sx, sy, sz], dim=1)
-        embeddings = [self.mlp[i](layer(sphere_coords)) + layer(sphere_coords)
+        x = equal_earth_projection(x)
+        #print(x)
+        embeddings = [self.mlp[i](layer(x)) + layer(x)
                       for i, layer in enumerate(self.rff_layers)]
         x_s = torch.cat(embeddings, dim=1)
         #print(x_s.shape)
@@ -70,12 +87,11 @@ class ImageEncoder(nn.Module):
         #    for param in blk.parameters():
         #        param.requires_grad = True
         
-
         self.proj = nn.Sequential(
-            nn.Linear(384, 512),
-            nn.LayerNorm(512),
+            nn.Linear(384, 2048),
+            nn.LayerNorm(2048),
             nn.GELU(),
-            nn.Linear(512, 512) 
+            nn.Linear(2048, 512)
         )
 
     def forward(self, x):

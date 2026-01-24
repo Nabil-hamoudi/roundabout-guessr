@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader, Subset
 from tqdm import tqdm
 from dataset import *
@@ -10,16 +9,13 @@ from embed_database import *
 import random
 from torch.optim.lr_scheduler import LinearLR
 from loss import *
-import copy
-
-
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+DEVICE_STR = "cuda" if torch.cuda.is_available() else "cpu"
 NBR_EPOCH = 101
 
 BATCH_SIZE = 32
-BATCH_COMBINED = 300
+BATCH_COMBINED = 4096
 
 def model_validation(model, val_imgs, criterion):
     model.eval()
@@ -31,111 +27,32 @@ def model_validation(model, val_imgs, criterion):
         for img, pos in pbar:
             img = img.to(DEVICE)
             pos = pos.to(DEVICE)
-            if img.size(0) < 2:
-                continue 
             B = img.size(0)
-            logits, labels = model(img, pos)
-            
-            loss_i = criterion(logits, labels)      # Image -> Loc
-            loss_l = criterion(logits.t(), labels)  # Loc -> Image
-            loss = (loss_i + loss_l) / 2
+            #img a = l'ancre, b = l'image actuelle, c = négative
+            pred_img, pred_pos, scale = model(img, pos)
+
+            logits = (pred_img @ pred_pos.T)*scale
+            targets = torch.arange(B, device=DEVICE)
+
+            loss_i2p = criterion(logits, targets)
+            loss_p2i = criterion(logits.T, targets)
+            loss = (loss_i2p + loss_p2i) / 2
 
             #print(loss.item())
             pbar.set_postfix({"loss": f"{loss.item():.4f}"})
             total_loss += loss.item()
 
     return total_loss/len(val_imgs)
-
-#gentiment généré par gemini
-#l'implémentation maison n'étant pas suffisamment efficace...
-class MoCoWrapper(nn.Module):
-    def __init__(self, base_encoder, queue_size=4096):
-        super().__init__()
-        self.base_encoder = base_encoder
-        self.queue_size = queue_size
-        
-        # On stocke les coordonnées GPS brutes (pas les embeddings !)
-        # Shape: (2, 4096)
-        self.register_buffer("gps_queue", torch.randn(2, queue_size))
-        self.register_buffer("queue_ptr", torch.zeros(1, dtype=torch.long))
-
-    @torch.no_grad()
-    def dequeue_and_enqueue(self, gps):
-        """ Ajoute les GPS du batch actuel dans la file d'attente """
-        batch_size = gps.shape[0]
-        ptr = int(self.queue_ptr)
-        
-        # Si le batch est plus petit que l'espace restant (cas fin d'epoch)
-        if ptr + batch_size > self.queue_size:
-            ptr = 0 # On repart au début (simplification pour éviter les bugs d'index)
-            
-        self.gps_queue[:, ptr:ptr + batch_size] = gps.t()
-        ptr = (ptr + batch_size) % self.queue_size
-        self.queue_ptr[0] = ptr
-
-    def forward(self, img, loc):
-        # 1. Image Embedding (Lourd -> fait 1 seule fois)
-        # base_encoder retourne (img_emb, loc_emb, scale)
-        # On n'utilise que img_emb ici
-        img_features = self.base_encoder.image_encoder(img)
-        img_features = F.normalize(img_features, dim=1)
-        
-        # Récupération du scale (température)
-        logit_scale = self.base_encoder.logit_scale.exp()
-
-        if self.training:
-            # --- MODE TRAIN : AVEC QUEUE ---
-            
-            # A. Embedding du batch de location actuel
-            loc_features = self.base_encoder.location_encoder(loc)
-            loc_features = F.normalize(loc_features, dim=1)
-            
-            # B. Embedding de la Queue (Recalculé à la volée !)
-            # C'est ultra-rapide (quelques millisecondes)
-            with torch.no_grad():
-                queue_gps = self.gps_queue.t() # (K, 2)
-                queue_feat = self.base_encoder.location_encoder(queue_gps)
-                queue_feat = F.normalize(queue_feat, dim=1)
-            
-            # C. Concaténation : [Batch (Positifs) | Queue (Négatifs)]
-            # (Batch + K, Dim)
-            all_loc_features = torch.cat([loc_features, queue_feat], dim=0)
-            
-            # D. Calcul de similarité
-            # (B, Dim) @ (B + K, Dim).T -> (B, B + K)
-            logits = logit_scale * (img_features @ all_loc_features.t())
-            
-            # E. Labels
-            # La bonne réponse pour l'image 0 est à l'index 0
-            # La bonne réponse pour l'image 1 est à l'index 1...
-            labels = torch.arange(img.size(0), device=img.device)
-            
-            # F. Mise à jour de la queue
-            self.dequeue_and_enqueue(loc)
-            
-            return logits, labels
-            
-        else:
-            # --- MODE VAL : SANS QUEUE (Batch vs Batch) ---
-            loc_features = self.base_encoder.location_encoder(loc)
-            loc_features = F.normalize(loc_features, dim=1)
-            
-            # Matrice carrée (B, B)
-            logits = logit_scale * (img_features @ loc_features.t())
-            labels = torch.arange(img.size(0), device=img.device)
-            
-            return logits, labels
-        
-import copy
+import copy 
 if __name__ == "__main__":
-
+    scaler = torch.amp.GradScaler(DEVICE_STR)
     print("Chargement du JSON rond pts")
     pos = get_images_pos("yo/coordinates.json")
     print("Chargement des images")
     imgs = get_images_paths()
 
 
-    dataset = ImagesPosDataset(imgs, pos)
+    dataset = ImagesPosDataset(imgs, pos, is_train=True)
     generator1 = torch.Generator().manual_seed(42)
     train_indices, val_indices = torch.utils.data.random_split(
         range(len(dataset)), 
@@ -145,9 +62,12 @@ if __name__ == "__main__":
 
     train_dataset = Subset(dataset, train_indices.indices)
     val_dataset = Subset(copy.deepcopy(dataset), val_indices.indices)
+    val_dataset.dataset.is_train = False
 
-    base_model = MixedEncoder().to(DEVICE)
-    model = MoCoWrapper(base_model, queue_size=4096).to(DEVICE)
+    print(train_dataset.dataset.is_train)
+    print(val_dataset.dataset.is_train)
+
+    model = MixedEncoder().to(DEVICE)
     #model.load_state_dict(torch.load("save.pt"))
 
     #Gérer la validation après déjà je veux faire en sorte que ça forward
@@ -161,39 +81,79 @@ if __name__ == "__main__":
 
         model.train()
         total_loss = 0
-
+        optimizer.zero_grad()
         pbar = tqdm(train_loader, desc=f"Epoch {epoch}", unit="batch", leave=False)
 
         # Accumulate outputs
         accum_pred_img = []
         accum_pred_pos = []
+        accum_scale = []
         batch_count = 0
 
         for img, pos in pbar:
-            img, pos = img.to(DEVICE), pos.to(DEVICE)
+            img = img.to(DEVICE)
+            pos = pos.to(DEVICE)
+            B = img.size(0)
+            # Forward pass only, no backward yet
+            with torch.autocast(device_type=DEVICE_STR, dtype=torch.float16):
+                pred_img, pred_pos, scale = model(img, pos)
+            accum_pred_img.append(pred_img)
+            accum_pred_pos.append(pred_pos)
+            accum_scale.append(scale)
+            batch_count += 1
 
-            if img.size(0) < BATCH_SIZE:
-                continue
-            
+            # When 12 batches are accumulated, compute loss and backward
+            if batch_count == BATCH_COMBINED // BATCH_SIZE:
+                big_pred_img = torch.cat(accum_pred_img, dim=0)
+                big_pred_pos = torch.cat(accum_pred_pos, dim=0)
+                # Pour le scale, on prend la moyenne
+                big_scale = torch.stack(accum_scale).mean()
+                big_B = big_pred_img.size(0)
+                logits = (big_pred_img @ big_pred_pos.T) * big_scale
+                targets = torch.arange(big_B, device=DEVICE)
+
+                loss_i2p = criterion(logits, targets)
+                loss_p2i = criterion(logits.T, targets)
+                loss = (loss_i2p + loss_p2i) / 2
+
+                scaler.scale(loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
+                optimizer.zero_grad()
+                pbar.set_postfix({"loss": f"{loss.item():.4f}"})
+                total_loss += loss.item()
+
+                # Reset accumulators
+                accum_pred_img = []
+                accum_pred_pos = []
+                accum_scale = []
+                batch_count = 0
+
+        # Si il reste des batches non traités à la fin de l'epoch
+        if batch_count > 0:
             optimizer.zero_grad()
-            
-            logits, labels = model(img, pos)
-            
-            loss = criterion(logits, labels)
-            
+            big_pred_img = torch.cat(accum_pred_img, dim=0)
+            big_pred_pos = torch.cat(accum_pred_pos, dim=0)
+            big_scale = torch.stack(accum_scale).mean()
+            big_B = big_pred_img.size(0)
+            logits = (big_pred_img @ big_pred_pos.T) * big_scale
+            targets = torch.arange(big_B, device=DEVICE)
+
+            loss_i2p = criterion(logits, targets)
+            loss_p2i = criterion(logits.T, targets)
+            loss = (loss_i2p + loss_p2i) / 2
+
             loss.backward()
             optimizer.step()
-            
-            total_loss += loss.item()
-            
             pbar.set_postfix({"loss": f"{loss.item():.4f}"})
-            #break
+            total_loss += loss.item()
 
-        print(f"Fin epoch {epoch} loss tr moyenne {total_loss/len(train_loader)}")
+        print(f"Fin epoch {epoch} loss tr moyenne {total_loss/max(1, (len(train_loader)//(BATCH_COMBINED // BATCH_SIZE)))}")
         print("Début de la validation : ")
         loss = model_validation(model, val_loader, criterion)
         scheduler.step(loss)
         print(f"Validation terminée, loss : {loss}")
 
         torch.save(model.state_dict(), f"model_epoch_{epoch}.pt")
+
 
