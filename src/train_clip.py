@@ -189,8 +189,10 @@ def train_clip(nbr_epoch=NBR_EPOCH, batch_size=BATCH_SIZE, batch_combined=BATCH_
     print(train_dataset.is_train)
     print(val_dataset.is_train)
 
-    model = MixedEncoder().to(DEVICE)
-    #model.load_state_dict(torch.load("model_epoch_3.pt"))
+    if startingmodel == None:
+        model = MixedEncoder().to(DEVICE)
+    else:
+        model.load_state_dict(torch.load(startingmodel))
 
     #Gérer la validation après déjà je veux faire en sorte que ça forward
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=True)
