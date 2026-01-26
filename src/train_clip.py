@@ -161,7 +161,7 @@ def criterion_duplicates(img_embed, loc_embed, scale, positions, criterion):
     
     return (loss_i2p + loss_p2i) / 2
 
-def train_clip(nbr_epoch=NBR_EPOCH, batch_size=BATCH_SIZE, batch_combined=BATCH_COMBINED, datafolder=DATAFOLDER, startingmodel=None):
+def train_clip(nbr_epoch=NBR_EPOCH, batch_size=BATCH_SIZE, batch_combined=BATCH_COMBINED, datafolder=DATAFOLDER):
     NBR_EPOCH = nbr_epoch
     BATCH_SIZE = batch_size
     BATCH_COMBINED = batch_combined
@@ -189,10 +189,8 @@ def train_clip(nbr_epoch=NBR_EPOCH, batch_size=BATCH_SIZE, batch_combined=BATCH_
     print(train_dataset.is_train)
     print(val_dataset.is_train)
 
-    if startingmodel == None:
-        model = MixedEncoder().to(DEVICE)
-    else:
-        model.load_state_dict(torch.load(startingmodel))
+    model = MixedEncoder().to(DEVICE)
+    #model.load_state_dict(torch.load("model_epoch_3.pt"))
 
     #Gérer la validation après déjà je veux faire en sorte que ça forward
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, num_workers=0, shuffle=True)
