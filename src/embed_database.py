@@ -7,7 +7,7 @@ from dataset import *
 from tqdm import tqdm
 from hierarchical_kmeans import HKMeans
 import cv2
-from model2 import MixedEncoder
+from model import MixedEncoder
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 DEVICE_STR = "cuda" if torch.cuda.is_available() else "cpu"
 def create_database(imgs, pos, model):

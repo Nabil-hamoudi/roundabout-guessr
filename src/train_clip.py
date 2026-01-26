@@ -4,7 +4,7 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader, Subset
 from tqdm import tqdm
 from dataset import *
-from model2 import *
+from model import *
 from embed_database import *
 import random
 from torch.optim.lr_scheduler import CosineAnnealingLR
