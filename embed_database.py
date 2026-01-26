@@ -174,7 +174,7 @@ def visualize_tsne(embeddings_path='embeddings_db.pt', pos_dict=None):
     
     # t-SNE : on réduit à 2 dimensions pour l'affichage
     # perplexity=30 est standard, à varier entre 5 et 50 selon la taille des clusters
-    tsne = TSNE(n_components=2, perplexity=30, random_state=42)
+    tsne = TSNE(n_components=2, perplexity=200, random_state=42, init="pca")
     coords = tsne.fit_transform(embeddings)
     
     # Récupérer les couleurs (Latitude par exemple si dispo, sinon ID)
@@ -204,7 +204,7 @@ if __name__ == "__main__":
     imgs = get_images_paths("gen_fr/data_france")
 
     model = MixedEncoder().to(DEVICE)
-    model.load_state_dict(torch.load("model_epoch_15.pt"))
+    model.load_state_dict(torch.load("goated.pt"))
     #On peut aussi db = torch.load(embeddings_db.pt)
     db = create_database(imgs, pos, model)
     #db = torch.load("embeddings_db.pt")
