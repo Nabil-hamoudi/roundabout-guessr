@@ -17,7 +17,8 @@ DEVICE_STR = "cuda" if torch.cuda.is_available() else "cpu"
 NBR_EPOCH = 101
 BATCH_SIZE = 32
 BATCH_COMBINED = 1200
-DATAFOLDER = "gen"
+DATAJSON = "yo/coordinates.json"
+DATAIMAGES = "yo/data"
 
 def physical_dist(latlon1, latlon2):
     R = 6371.0
@@ -161,17 +162,18 @@ def criterion_duplicates(img_embed, loc_embed, scale, positions, criterion):
     
     return (loss_i2p + loss_p2i) / 2
 
-def train_clip(nbr_epoch=NBR_EPOCH, batch_size=BATCH_SIZE, batch_combined=BATCH_COMBINED, datafolder=DATAFOLDER):
+def train_clip(nbr_epoch=NBR_EPOCH, batch_size=BATCH_SIZE, batch_combined=BATCH_COMBINED, datajson=DATAJSON, dataimages=DATAIMAGES):
     NBR_EPOCH = nbr_epoch
     BATCH_SIZE = batch_size
     BATCH_COMBINED = batch_combined
-    DATAFOLDER = datafolder
+    DATAJSON = datajson
+    DATAIMAGES = dataimages
 
     scaler = torch.amp.GradScaler(DEVICE_STR)
     print("Chargement du JSON rond pts")
-    pos = get_images_pos(DATAFOLDER + "/data")
+    pos = get_images_pos(DATAJSON)
     print("Chargement des images")
-    imgs = get_images_paths(DATAFOLDER + "/coordonnees.json")
+    imgs = get_images_paths(DATAIMAGES)
     log_history = []
 
     dataset = ImagesPosDataset(imgs, pos, is_train=True)

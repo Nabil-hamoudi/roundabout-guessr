@@ -37,21 +37,27 @@ def main():
     
     args = parser.parse_args()
 
-    dataset_path = Path(args.dataset_folder).resolve()
+    json_path = Path(args.dataset_folder).joinpath("coordinates.json")
+    images_path = Path(args.dataset_folder).joinpath("data")
 
-    if not dataset_path.exists():
-        print(f"Erreur : Le dossier {dataset_path} n'existe pas.")
+    if not images_path.exists():
+        print(f"Erreur : Le dossier {images_path} n'existe pas.")
         return
 
-    print(f"Dataset : {dataset_path}")
+    if not json_path.exists():
+        print(f"Erreur : Le fichier {json_path} n'existe pas.")
+        return
+
+    print(f"Dataset : {Path(args.dataset_folder)}")
     print(f"Batch combiné : {args.batch_combined}")
 
     # Lancer l'entraînement
-    train_clip(
+    train_clip.train_clip(
         nbr_epoch=args.nbr_epoch,
         batch_size=args.batch_size,
         batch_combined=args.batch_combined,
-        datafolder=str(dataset_path),
+        datajson=str(json_path),
+        dataimages=str(images_path)
     )
 
 if __name__ == "__main__":
