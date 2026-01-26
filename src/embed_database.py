@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 import math
-from model import *
+from model_ALPHA import *
 from dataset import *
 from tqdm import tqdm
 from hierarchical_kmeans import HKMeans
