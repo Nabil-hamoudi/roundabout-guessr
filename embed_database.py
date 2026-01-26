@@ -7,10 +7,9 @@ from dataset import *
 from tqdm import tqdm
 from hierarchical_kmeans import HKMeans
 import cv2
-
 from model2 import MixedEncoder
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+DEVICE_STR = "cuda" if torch.cuda.is_available() else "cpu"
 def create_database(imgs, pos, model):
 
     print("Creating the databse")
@@ -26,13 +25,14 @@ def create_database(imgs, pos, model):
     elems = []
 
     dataset = ImagesPosDataset(imgs, pos, want_index=True)
-    loader = DataLoader(dataset, batch_size=8)
+    loader = DataLoader(dataset, batch_size=64)
 
     pbar = tqdm(loader, desc=f"Calcul des embeds", unit="batch", leave=False)
     with torch.no_grad():
         for _, pos, i_batch in pbar:
             pos = pos.to(DEVICE)
-            vecs = model.location_encoder(pos).detach().cpu().numpy()
+            with torch.autocast(device_type=DEVICE_STR, dtype=torch.float16):
+                vecs = model.location_encoder(pos).detach().cpu().numpy()
 
             for idx,vec in zip(i_batch, vecs):
                 i = idx.item()
@@ -48,7 +48,8 @@ def create_database(imgs, pos, model):
     #print(elems)
     ids = np.array(ids)
     elems = np.array(elems)
-    db = HKMeans(elems, ids, 5, 10)
+    print(len(ids), len(elems))
+    db = HKMeans(elems, ids,5,10, 10000000)
 
     return db
 
@@ -144,6 +145,7 @@ def compare_pca_geo(embeddings_path='embeddings_db.pt', pos_dict=None):
     plt.colorbar(sc1, ax=ax1, label='Latitude')
     
     # Géographie
+    print(len(geo_coords))
     sc2 = ax2.scatter(geo_coords[:, 1], geo_coords[:, 0], 
                      c=geo_coords[:, 0], cmap='RdYlBu_r', s=30, edgecolors='k', linewidth=0.3)
     ax2.set_xlabel('Longitude')
@@ -198,11 +200,11 @@ def visualize_tsne(embeddings_path='embeddings_db.pt', pos_dict=None):
     plt.tight_layout()
     plt.show()
 if __name__ == "__main__":
-    pos = get_images_pos("yo/coordinates.json")
-    imgs = get_images_paths()
+    pos = get_images_pos("gen_fr/coordinates_france.json")
+    imgs = get_images_paths("gen_fr/data_france")
 
     model = MixedEncoder().to(DEVICE)
-    model.load_state_dict(torch.load("model_epoch_20.pt"))
+    model.load_state_dict(torch.load("model_epoch_15.pt"))
     #On peut aussi db = torch.load(embeddings_db.pt)
     db = create_database(imgs, pos, model)
     #db = torch.load("embeddings_db.pt")
@@ -211,7 +213,7 @@ if __name__ == "__main__":
     a = torch.load("embeddings_db.pt", weights_only=False)
     ids = np.array(a["ids"])
     elems = np.array(a["elems"])
-    db = HKMeans(elems, ids, 5, 10)
+    db = HKMeans(elems, ids,5,10, 10000000)
     #model = BaseEmbed().to(DEVICE)   
     
     
@@ -222,6 +224,5 @@ if __name__ == "__main__":
     visualize_pca("embeddings_db.pt")
     compare_pca_geo("embeddings_db.pt", pos_dict=pos)
     visualize_tsne("embeddings_db.pt", pos_dict=pos)
-
 
 
