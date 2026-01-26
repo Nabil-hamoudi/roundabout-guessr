@@ -34,12 +34,6 @@ def main():
         help="Taille du batch combiné"
     )
 
-    parser.add_argument(
-        '-m', '--startmodel',
-        dest="starting_model", # Nom utilisé dans args.batch_combined
-        type=str,
-        help="Modele où reprendre"
-    )
     
     args = parser.parse_args()
 
@@ -57,7 +51,7 @@ def main():
         nbr_epoch=args.nbr_epoch,
         batch_size=args.batch_size,
         batch_combined=args.batch_combined,
-        datafolder=str(dataset_path)
+        datafolder=str(dataset_path),
     )
 
 if __name__ == "__main__":

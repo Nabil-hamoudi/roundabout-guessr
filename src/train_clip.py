@@ -160,7 +160,7 @@ def criterion_duplicates(img_embed, loc_embed, scale, positions, criterion):
     
     return (loss_i2p + loss_p2i) / 2
 
-def train_clip(nbr_epoch=NBR_EPOCH, batch_size=BATCH_SIZE, batch_combined=BATCH_COMBINED, datafolder=DATAFOLDER, startingmodel=None):
+def train_clip(nbr_epoch=NBR_EPOCH, batch_size=BATCH_SIZE, batch_combined=BATCH_COMBINED, datafolder=DATAFOLDER):
     NBR_EPOCH = nbr_epoch
     BATCH_SIZE = batch_size
     BATCH_COMBINED = batch_combined
