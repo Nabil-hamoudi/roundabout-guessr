@@ -1,6 +1,63 @@
-# roundabout-guessr
+# Position Guesseur
 
-Projet machine learning 2025-2026
+*Nabil HAMOUDI, Alexandre DUCROS*
+
+## Presentation
+
+ -  Machine Learning project starting from december 2025 to January 2026.
+ - This project objective is to get from a photo the coordinate of where it has been taken.
+
+### Requirement
+
+> Python 3.14.2 tqdm
+
+#### Model Training
+
+> torch numpy matplotlib sklearn
+
+#### DataSet Scrapping
+
+> streetlevel 
+
+## Operation
+ - dataset\
+    - gen.py
+ - src\
+
+## Dataset
+ > Here our dataset is scrapped from GoogleStreetView, we take random coordinate in France and use the librairy Streetlevel to get the google panorama ID.
+ > With each panorama ID we can get the panorama image and with each panorama we take images from any angle we want.
+
+ - Parle des 2 maniere de recup? genre directement avec l'image de facon random ou avec les villes etc?
+ - For all the images we have "coordinates.json" containing all the data connected/annotation associated with each images.
+
+
+```json
+ "image name :"{
+    "longitude": float,
+    "latitude": float,
+    "pano_id": string,
+    "sampled_lon": float,
+    "sampled_lat": float,
+    "view_direction": string,
+    "h_deg": integer,
+    "v_deg": integer
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `longitude` | float | Original longitude coordinate |
+| `latitude` | float | Original latitude coordinate |
+| `pano_id` | string | Google Street View panorama ID |
+| `sampled_lon` | float | Sampled longitude for processing |
+| `sampled_lat` | float | Sampled latitude for processing |
+| `view_direction` | string | Viewing direction (front/left/right/back) |
+| `h_deg` | integer | Horizontal angle in degrees |
+| `v_deg` | integer | Vertical angle in degrees |
+
+
+## Notre Réseaux de Neurones
 
 Finir de DL les données sur Google Street View
 
@@ -34,3 +91,9 @@ On applique un algorithme naïf, regarder FAISS etc etc.
 
 
 TODO : Ajouter visualisation sur la répartition des coordonnées et sur la répartitions de l'espace latent (PCA/T-SNE)
+
+## Sources
+
+- Lindenberger, P., Sarlin, P.-E., Hosang, J., Balice, M., Pollefeys, M., Lynen, S., & Trulls, E. (2025). Scaling Image Geo-Localization to Continent Level. *arXiv preprint arXiv:2510.26795*. https://arxiv.org/abs/2510.26795
+
+- Vivanco Cepeda, V., Nayak, G. K., & Shah, M. (2023). GeoCLIP: Clip-Inspired Alignment between Locations and Images for Effective Worldwide Geo-localization. *arXiv preprint arXiv:2309.16020*. https://arxiv.org/abs/2309.16020
