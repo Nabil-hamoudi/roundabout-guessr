@@ -3,9 +3,9 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader, Subset
 from tqdm import tqdm
-from dataset import *
-from model_ALPHA import *
-from embed_database import *
+from src.dataset import *
+from src.model_ALPHA import *
+from src.embed_database import *
 import random
 from torch.optim.lr_scheduler import LinearLR
 from loss import *
