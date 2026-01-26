@@ -3,12 +3,11 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader, Subset
 from tqdm import tqdm
-from src.dataset import *
+from dataset import *
 from src.model import *
-from src.embed_database import *
+from embed_database import *
 import random
 from torch.optim.lr_scheduler import CosineAnnealingLR
-from src.loss import *
 import json
 from datetime import datetime
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")

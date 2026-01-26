@@ -1,11 +1,10 @@
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
+import torch.nn.functional as F
 import math
-from src.model_ALPHA import *
-from src.dataset import *
+from dataset import *
 from tqdm import tqdm
-from src.hierarchical_kmeans import HKMeans
 import cv2
 from src.model import MixedEncoder
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -44,29 +43,38 @@ def create_database(imgs, pos, model):
         "elems" : elems
     }
     torch.save(a, 'embeddings_db.pt')
-    print("Création des clusters")
+
     #print(elems)
-    ids = np.array(ids)
-    elems = np.array(elems)
-    print(len(ids), len(elems))
-    db = HKMeans(elems, ids,5,10, 10000000)
+    return a
 
-    return db
-
-def get_closest(db, img, model):
+def get_closest(db, img, model, k = 5):
     model.eval()
-    img = compat_transform(image = img)["image"]
-    img = img.to(DEVICE)
-    #Comme on a pas utilisé de loader on doit simuler le batch
-    img = img.unsqueeze(0)
+    
+    img_tensor = compat_transform(image=img)["image"]
+    img_tensor = img_tensor.to(DEVICE).unsqueeze(0) 
+
     with torch.no_grad():
-        #img = compat_transform(image = img)
-        vec = model.image_encoder(img)
+        query_vec = model.image_encoder(img_tensor)
+        query_vec = F.normalize(query_vec, p=2, dim=1)
 
-    vec = vec.detach().cpu().numpy()
-    #vec = torch.
-    return db.find_elem(vec)
+    db_vecs = torch.tensor(np.array(db['elems']), device=DEVICE)
+    db_ids = np.array(db['ids'])
 
+    #query x dbvect.T
+    scores = torch.mm(query_vec, db_vecs.T)
+    
+    best_scores, best_indices = torch.topk(scores, k=k, dim=1)
+    
+    best_indices = best_indices.cpu().numpy()[0]
+    best_scores = best_scores.cpu().numpy()[0]
+    
+    results = []
+    for rank, idx in enumerate(best_indices):
+        result_id = db_ids[idx]
+        score = best_scores[rank]
+        results.append((result_id, score))
+        
+    return results
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -206,20 +214,17 @@ if __name__ == "__main__":
     model = MixedEncoder().to(DEVICE)
     model.load_state_dict(torch.load("goated.pt"))
     #On peut aussi db = torch.load(embeddings_db.pt)
-    db = create_database(imgs, pos, model)
+    #db = create_database(imgs, pos, model)
     #db = torch.load("embeddings_db.pt")
     #torch.save(db, "embeddings_db.pt")
 
     a = torch.load("embeddings_db.pt", weights_only=False)
-    ids = np.array(a["ids"])
-    elems = np.array(a["elems"])
-    db = HKMeans(elems, ids,5,10, 10000000)
     #model = BaseEmbed().to(DEVICE)   
     
     
     img = cv2.imread("./val/roundabout_263/streetview_1.jpg", cv2.IMREAD_COLOR)
 
-    print(get_closest(db, img, model))
+    print(get_closest(a, img, model))
 
     visualize_pca("embeddings_db.pt")
     compare_pca_geo("embeddings_db.pt", pos_dict=pos)
