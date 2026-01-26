@@ -34,13 +34,6 @@ def main():
         help="Taille du batch combiné"
     )
 
-    parser.add_argument(
-        '-m', '--startmodel',
-        dest="starting_model",
-        type=str,
-        default=None,
-        help="Modele où reprendre"
-    )
     
     args = parser.parse_args()
 
@@ -53,23 +46,12 @@ def main():
     print(f"Dataset : {dataset_path}")
     print(f"Batch combiné : {args.batch_combined}")
 
-
-    model_path = Path(args.starting_model).resolve()
-
-    if not model_path.exists():
-        print(f"Erreur : Le fichier {model_path} n'existe pas.")
-        return
-
-    print(f"Dataset : {model_path}")
-    print(f"Batch combiné : {args.starting_model}")
-
     # Lancer l'entraînement
     train_clip(
         nbr_epoch=args.nbr_epoch,
         batch_size=args.batch_size,
         batch_combined=args.batch_combined,
         datafolder=str(dataset_path),
-        startingmodel=str(model_path)
     )
 
 if __name__ == "__main__":
