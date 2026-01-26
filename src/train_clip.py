@@ -3,20 +3,21 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader, Subset
 from tqdm import tqdm
-from dataset import *
-from model2 import *
-from embed_database import *
+from src.dataset import *
+from src.model import *
+from src.embed_database import *
 import random
 from torch.optim.lr_scheduler import CosineAnnealingLR
-from loss import *
+from src.loss import *
 import json
 from datetime import datetime
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 DEVICE_STR = "cuda" if torch.cuda.is_available() else "cpu"
-NBR_EPOCH = 101
 
+NBR_EPOCH = 101
 BATCH_SIZE = 32
 BATCH_COMBINED = 1200
+DATAFOLDER = "gen"
 
 def physical_dist(latlon1, latlon2):
     R = 6371.0
@@ -90,6 +91,7 @@ def model_validation(model, val_loader, distance_thresholds_km=[1, 25, 200, 750]
     
     return median_error  #on retourne la médiane aps la moyenne !
 import copy 
+import argparse
 
 
 def geographic_split(image_paths, positions, val_split_pct=0.1, cell_size_deg=0.02):
@@ -159,12 +161,17 @@ def criterion_duplicates(img_embed, loc_embed, scale, positions, criterion):
     
     return (loss_i2p + loss_p2i) / 2
 
-if __name__ == "__main__":
+def train_clip(nbr_epoch=NBR_EPOCH, batch_size=BATCH_SIZE, batch_combined=BATCH_COMBINED, datafolder=DATAFOLDER, startingmodel=None):
+    NBR_EPOCH = nbr_epoch
+    BATCH_SIZE = batch_size
+    BATCH_COMBINED = batch_combined
+    DATAFOLDER = datafolder
+
     scaler = torch.amp.GradScaler(DEVICE_STR)
     print("Chargement du JSON rond pts")
-    pos = get_images_pos("gen_fr/coordinates_france.json")
+    pos = get_images_pos(DATAFOLDER + "/data")
     print("Chargement des images")
-    imgs = get_images_paths("gen_fr/data_france")
+    imgs = get_images_paths(DATAFOLDER + "/coordonnees.json")
     log_history = []
 
     dataset = ImagesPosDataset(imgs, pos, is_train=True)

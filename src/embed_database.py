@@ -2,12 +2,12 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 import math
-from model import *
-from dataset import *
+from src.model_ALPHA import *
+from src.dataset import *
 from tqdm import tqdm
-from hierarchical_kmeans import HKMeans
+from src.hierarchical_kmeans import HKMeans
 import cv2
-from model2 import MixedEncoder
+from src.model import MixedEncoder
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 DEVICE_STR = "cuda" if torch.cuda.is_available() else "cpu"
 def create_database(imgs, pos, model):
