@@ -3,31 +3,47 @@ import sys
 from pathlib import Path
 from src import train_clip, embed_database
 
+DESCRIPTIONCLI = "CLI pour ensemble des applications"
+HELPSUBPARSER = 'Entrainement et lancement du modele'
+HELPTRAIN = "Entraîner le modèle CLIP"
+HELPEPOCH = "Nombre d'epochs pour l'entraînement"
+HELPBATCH = "Taille du batch"
+HELPBATCHCOMBI = "Taille du batch combiné"
+HELPDATASET = "Chemin vers le dossier du dataset contenant un dossier data images et coordinates.json"
+HELPMODEL = "Chemin vers le fichier du model"
+HELPEMBEDING = "Chemin vers le fichier des embeddings"
+HELPIMAGE = "Chemin vers le fichier de l'image"
+HELPINITEMBEDDING = "Generer les embeddings"
+HELPUSEMODEL = "Utiliser le modèle pour une image et les embeddings"
+HELPTSNE = "Visualiser le tsne des embeddings"
+HELPPCA = "Visualiser le pca des embeddings"
+HELPPCAGEO = "Visualiser le pca des embeddings avec les coordonnées géographiques"
+
 def main():
     parser = argparse.ArgumentParser(
         description="CLI pour ensemble des applications"
     )
     
-    subparsers = parser.add_subparsers(help='Entrainement et lancement du modele', required=True, dest='subcommand')
+    subparsers = parser.add_subparsers(help=HELPSUBPARSER, required=True, dest='subcommand')
 
 ####################################################################################
 
-    trainparser = subparsers.add_parser("train", help="Entraîner le modèle CLIP")
+    trainparser = subparsers.add_parser("train", help=HELPTRAIN)
     # Arguments positionnels (obligatoires)
     trainparser.add_argument(
         "nbr_epoch",
         type=int,
-        help="Nombre d'epochs pour l'entraînement"
+        help=HELPEPOCH
     )
     trainparser.add_argument(
         "batch_size",
         type=int,
-        help="Taille du batch"
+        help=HELPBATCH
     )
     trainparser.add_argument(
         "dataset_folder",
         type=str,
-        help="Chemin vers le dossier du dataset"
+        help=HELPDATASET
     )
     
     # Argument OPTIONNEL (commence par des tirets)
@@ -36,88 +52,88 @@ def main():
         dest="batch_combined", # Nom utilisé dans args.batch_combined
         type=int,
         default=None,
-        help="Taille du batch combiné"
+        help=HELPBATCHCOMBI
     )
 
 ####################################################################################
 ####################################################################################
-    createembededparser = subparsers.add_parser("embedgen", help="Generer les embeddings")
+    createembededparser = subparsers.add_parser("embedgen", help=HELPINITEMBEDDING)
 
     # Arguments positionnels (obligatoires)
     createembededparser.add_argument(
         "model_file",
         type=str,
-        help="Chemin vers le fichier du model"
+        help=HELPMODEL
     )
 
     createembededparser.add_argument(
         "dataset_folder",
         type=str,
-        help="Chemin vers le dossier du dataset"
+        help=HELPDATASET
     )
 
 ####################################################################################
 ####################################################################################
-    usemodel = subparsers.add_parser("model", help="utiliser model")
+    usemodel = subparsers.add_parser("model", help=HELPUSEMODEL)
 
     # Arguments positionnels (obligatoires)
     usemodel.add_argument(
         "model_file",
         type=str,
-        help="Chemin vers le fichier du model"
+        help=HELPMODEL
     )
 
     usemodel.add_argument(
         "embed_file",
         type=str,
-        help="Chemin vers les embeddings"
+        help=HELPEMBEDING
     )
 
     usemodel.add_argument(
         "image",
         type=str,
-        help="Chemin vers l'image'"
+        help=HELPIMAGE
     )
 ####################################################################################
 ####################################################################################
-    pca = subparsers.add_parser("pca", help="visualise le pca")
+    pca = subparsers.add_parser("pca", help=HELPPCA)
 
     pca.add_argument(
         "embed_file",
         type=str,
-        help="Chemin vers les embeddings"
+        help=HELPEMBEDING
     )
 ####################################################################################
 ####################################################################################
-    pcageo = subparsers.add_parser("pca_geo", help="visualise le pca geo")
+    pcageo = subparsers.add_parser("pca_geo", help=HELPPCAGEO)
 
     # Arguments positionnels (obligatoires)
     pcageo.add_argument(
         "dataset_folder",
         type=str,
-        help="Chemin vers le dossier du dataset"
+        help=HELPDATASET
     )
 
     pcageo.add_argument(
         "embed_file",
         type=str,
-        help="Chemin vers les embeddings"
+        help=HELPEMBEDING
     )
 ####################################################################################
 ####################################################################################
-    tsne = subparsers.add_parser("tsne", help="visualise le tsne")
+    tsne = subparsers.add_parser("tsne", help=HELPTSNE)
 
     # Arguments positionnels (obligatoires)
     tsne.add_argument(
         "dataset_folder",
         type=str,
-        help="Chemin vers le dossier du dataset"
+        help=HELPDATASET
     )
 
     tsne.add_argument(
         "embed_file",
         type=str,
-        help="Chemin vers les embeddings"
+        help=HELPEMBEDING
     )
 ####################################################################################
 
