@@ -209,9 +209,9 @@ def main():
             print(f"Erreur : Le fichier {model} n'existe pas.")
             return
 
-        print(f"embedings : {embed}")
+        print(f"Embeddings : {embed}")
         print(f"Model : {model}")
-        print(f"image : {image}")
+        print(f"Image : {image}")
 
         embed_database.usemodel(
             model,
@@ -231,7 +231,7 @@ def main():
             return
 
         print(f"Dataset : {Path(args.dataset_folder)}")
-        print(f"embedings : {embed}")
+        print(f"Embeddings : {embed}")
 
         embed_database.tsne(
             embed,
@@ -250,7 +250,7 @@ def main():
             return
 
         print(f"Dataset : {Path(args.dataset_folder)}")
-        print(f"embedings : {embed}")
+        print(f"Embeddings : {embed}")
 
         embed_database.pca_geo(
             embed,
@@ -263,7 +263,7 @@ def main():
             print(f"Erreur : Le fichier {embed} n'existe pas.")
             return
 
-        print(f"Embedings : {embed}")
+        print(f"Embeddings : {embed}")
 
         embed_database.pca(
             embed
