@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
 import math
-from dataset import *
+from src.dataset import *
 from tqdm import tqdm
 import cv2
 from src.model import MixedEncoder
@@ -207,27 +207,35 @@ def visualize_tsne(embeddings_path='embeddings_db.pt', pos_dict=None):
     plt.axis('off') # Les axes t-SNE n'ont pas d'unité signifiante
     plt.tight_layout()
     plt.show()
-if __name__ == "__main__":
-    pos = get_images_pos("gen_fr/coordinates_france.json")
-    imgs = get_images_paths("gen_fr/data_france")
+
+def init(model_path, data_path, json_path):
+    pos = get_images_pos(json_path)
+    imgs = get_images_paths(data_path)
 
     model = MixedEncoder().to(DEVICE)
-    model.load_state_dict(torch.load("goated.pt"))
-    #On peut aussi db = torch.load(embeddings_db.pt)
-    #db = create_database(imgs, pos, model)
-    #db = torch.load("embeddings_db.pt")
-    #torch.save(db, "embeddings_db.pt")
+    model.load_state_dict(torch.load(model_path))
 
-    a = torch.load("embeddings_db.pt", weights_only=False)
-    #model = BaseEmbed().to(DEVICE)   
-    
-    
-    img = cv2.imread("./val/roundabout_263/streetview_1.jpg", cv2.IMREAD_COLOR)
+    db = create_database(imgs, pos, model)
+    torch.save(db, "embeddings_db.pt")
 
+
+def tsne(embeding_path, json_path):
+    pos = get_images_pos(json_path)
+    visualize_tsne(embeding_path, pos_dict=pos)
+
+
+def pca(embeding_path):
+    visualize_pca(embeding_path)
+
+def pca_geo(embeding_path, json_path):
+    pos = get_images_pos(json_path)
+    compare_pca_geo(embeding_path, pos_dict=pos)
+
+def usemodel(model_path, embeding_path, image_path):
+    model = MixedEncoder().to(DEVICE)
+    model.load_state_dict(torch.load(model_path))
+
+    a = torch.load(embeding_path, weights_only=False)
+
+    img = cv2.imread(image_path, cv2.IMREAD_COLOR)
     print(get_closest(a, img, model))
-
-    visualize_pca("embeddings_db.pt")
-    compare_pca_geo("embeddings_db.pt", pos_dict=pos)
-    visualize_tsne("embeddings_db.pt", pos_dict=pos)
-
-
