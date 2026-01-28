@@ -47,6 +47,9 @@ def create_database(imgs, pos, model):
     #print(elems)
     return a
 
+def load_database(path='embeddings_db.pt'):
+    return torch.load(path, weights_only=False)
+
 def get_closest(db, img, model, k = 5):
     model.eval()
     
@@ -207,6 +210,41 @@ def visualize_tsne(embeddings_path='embeddings_db.pt', pos_dict=None):
     plt.axis('off') # Les axes t-SNE n'ont pas d'unité signifiante
     plt.tight_layout()
     plt.show()
+
+
+
+def visualize_geo(pos_dict=None):
+    geo_coords = []
+    found_count = 0
+    
+    for id_val in range(len(pos_dict)):
+        geo_coords.append(pos_dict[id_val])
+        found_count += 1
+            
+    geo_coords = np.array(geo_coords)
+    print(f"Affichage de {found_count} points géographiques.")
+
+    # 3. Plot
+    plt.figure(figsize=(10, 10)) # Format carré pour éviter d'écraser la France
+    
+    # x = Longitude (colonne 1), y = Latitude (colonne 0)
+    # On garde la couleur par latitude (cmap='RdYlBu_r') pour le style
+    sc = plt.scatter(geo_coords[:, 1], geo_coords[:, 0], 
+                     c=geo_coords[:, 0], cmap='RdYlBu_r', 
+                     s=30, edgecolors='k', linewidth=0.3, alpha=0.8)
+    
+    plt.xlabel('Longitude')
+    plt.ylabel('Latitude')
+    plt.title('Distribution Géographique du Dataset')
+    plt.grid(alpha=0.3, linestyle='--')
+    
+    # Important pour une carte : ratio égal pour ne pas déformer les distances
+    plt.axis('equal') 
+    
+    plt.colorbar(sc, label='Latitude')
+    plt.tight_layout()
+    plt.show()
+
 
 def init(model_path, data_path, json_path):
     pos = get_images_pos(json_path)
