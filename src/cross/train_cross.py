@@ -28,7 +28,10 @@ DATAJSON = DATAFOLDER + "/coordinates_paris.json"
 DATAIMAGES = DATAFOLDER + "/data_paris"
 DATASAT = DATAFOLDER + "/sat_paris"
 
-def train_cross(nb_epoch=NB_EPOCH, batch_size=BATCH_SIZE, batch_combined=BATCH_COMBINED, data_json=DATAJSON, data_images=DATAIMAGES, data_sat=DATASAT):
+LAT_MIN_F, LAT_MAX_F = 41.3, 51.1
+LON_MIN_F, LON_MAX_F = -5.1, 9.6
+
+def train_cross(nb_epoch=NB_EPOCH, batch_size=BATCH_SIZE, batch_combined=BATCH_COMBINED, data_json=DATAJSON, data_images=DATAIMAGES, data_sat=DATASAT, want_france=False):
     NB_EPOCH = nb_epoch
     BATCH_SIZE = batch_size
     BATCH_COMBINED = batch_combined
@@ -48,7 +51,10 @@ def train_cross(nb_epoch=NB_EPOCH, batch_size=BATCH_SIZE, batch_combined=BATCH_C
     train_dataset, val_dataset, train_dataset_clean = panorama_split(imgs, pos, sat_paths, want_clean=True)
 
 
-    model = CrossEncoder().to(DEVICE)
+    if want_france:
+        model = CrossEncoder(LAT_MIN=LAT_MIN_F, LAT_MAX=LAT_MAX_F, LON_MIN=LON_MIN_F, LON_MAX=LON_MAX_F).to(DEVICE)
+    else:
+        model = CrossEncoder().to(DEVICE)
 
     #Gérer la validation après déjà je veux faire en sorte que ça forward
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, num_workers=2, shuffle=True)

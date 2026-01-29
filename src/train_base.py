@@ -18,7 +18,10 @@ BATCH_COMBINED = 1200
 DATA_JSON = "yo/coordinates.json"
 DATA_IMAGES = "yo/data"
 
-def train_base(nb_epoch=NB_EPOCH, batch_size=BATCH_SIZE, batch_combined=BATCH_COMBINED, data_json=DATA_JSON, data_images=DATA_IMAGES):
+LAT_MIN_F, LAT_MAX_F = 41.3, 51.1
+LON_MIN_F, LON_MAX_F = -5.1, 9.6
+
+def train_base(nb_epoch=NB_EPOCH, batch_size=BATCH_SIZE, batch_combined=BATCH_COMBINED, data_json=DATA_JSON, data_images=DATA_IMAGES, want_france=False):
     NB_EPOCH = nb_epoch
     BATCH_SIZE = batch_size
     BATCH_COMBINED = batch_combined
@@ -37,7 +40,10 @@ def train_base(nb_epoch=NB_EPOCH, batch_size=BATCH_SIZE, batch_combined=BATCH_CO
     print(train_dataset.is_train)
     print(val_dataset.is_train)
 
-    model = MixedEncoder().to(DEVICE)
+    if want_france:
+        model = MixedEncoder(LAT_MIN=LAT_MIN_F, LAT_MAX=LAT_MAX_F, LON_MIN=LON_MIN_F, LON_MAX=LON_MAX_F).to(DEVICE)
+    else:
+        model = MixedEncoder().to(DEVICE)
     #model.load_state_dict(torch.load("model_epoch_3.pt"))
 
     #Gérer la validation après déjà je veux faire en sorte que ça forward
