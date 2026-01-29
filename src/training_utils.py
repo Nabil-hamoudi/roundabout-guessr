@@ -3,7 +3,7 @@ import random
 import torch
 import numpy as np
 from src.cross_view.dataset_cross import CrossDataset
-from base.dataset import ImagesPosDataset
+from src.base.dataset import ImagesPosDataset
 
 
 def cross_entropy_with_mask(logits, mask):

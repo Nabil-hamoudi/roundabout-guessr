@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 from tqdm import tqdm
-from src.dataset import *
-from src.model import *
+from src.base.dataset import *
+from src.base.model import *
 from src.embed_database import *
 from torch.optim.lr_scheduler import CosineAnnealingLR
 import json
