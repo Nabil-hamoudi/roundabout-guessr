@@ -36,6 +36,7 @@ def get_images_pos(path):
         json_file = json.load(f)
     
     coords = []
+    # Trier les clés par numéro pour correspondre à get_images_paths
     sorted_keys = sorted(json_file.keys(), 
                         key=lambda k: int(k.split("_")[1]))
     
@@ -64,7 +65,7 @@ class ImagesPosDataset(Dataset):
         self.sat_paths = sat_paths
         self.want_index = want_index  
         self.is_train = is_train
-        self.noise_std = 0.0013  
+        self.noise_std = 0.0001  
         self.train_transform = A.Compose([
             A.Resize(518, 518),
             A.Compose([
@@ -129,6 +130,8 @@ class ImagesPosDataset(Dataset):
         
         lat = raw_pos[0]
         lon = raw_pos[1]
+        #print(self.is_train)
+        #ajout bruit gaussien
         if self.is_train:
             lat += np.random.randn() * self.noise_std
             lon += np.random.randn() * self.noise_std
