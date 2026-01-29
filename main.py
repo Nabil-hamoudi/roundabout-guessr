@@ -20,6 +20,10 @@ HELPPCA = "Visualiser le pca des embeddings"
 HELPPCAGEO = "Visualiser le pca des embeddings avec les coordonnées géographiques"
 HELPCROSS = 'Utiliser le modèle cross-view'
 HELPCOORDINATES = "Chemin vers le fichier des coordonnées"
+HELPFR = "Utiliser les coordonnées de la France pour normaliser"
+
+LAT_MIN_F, LAT_MAX_F = 41.3, 51.1
+LON_MIN_F, LON_MAX_F = -5.1, 9.6
 
 def main():
     parser = argparse.ArgumentParser(
@@ -62,6 +66,12 @@ def main():
         action='store_true',
         default=False,
         help=HELPCROSS)
+    train_parser.add_argument(
+        '-fr',
+        '--france',
+        action='store_true',
+        default=False,
+        help=HELPFR)
 
 ####################################################################################
 ####################################################################################
@@ -85,6 +95,12 @@ def main():
         action='store_true',
         default=False,
         help=HELPCROSS)
+    create_embedded_parser.add_argument(
+        '-fr',
+        '--france',
+        action='store_true',
+        default=False,
+        help=HELPFR)
 
 ####################################################################################
 ####################################################################################
@@ -123,7 +139,12 @@ def main():
         dest="cross",
         help=HELPCROSS
     )
-####################################################################################
+    use_model.add_argument(
+        '-fr',
+        '--france',
+        action='store_true',
+        default=False,
+        help=HELPFR)
 ####################################################################################
     pca = subparsers.add_parser("pca", help=HELPPCA)
 
@@ -198,23 +219,25 @@ def main():
                 if not sat_path.exists():
                     print(f"Erreur : Le dossier {sat_path} n'existe pas.")
                     return
-                from src.cross import train_cross
+                from src.cross_view import train_cross
                 train_cross.train_cross(
                 nb_epoch=args.nb_epoch,
                 batch_size=args.batch_size,
                 batch_combined=batch_combined,
                 data_json=str(json_path.resolve()),
                 data_images=str(images_path.resolve()),
-                data_sat=str(sat_path.resolve())
+                data_sat=str(sat_path.resolve()),
+                want_france=(args.france == True)
             )
         else:
-            from src import train_base
+            from base import train_base
             train_base.train_base(
                 nb_epoch=args.nb_epoch,
                 batch_size=args.batch_size,
                 batch_combined=batch_combined,
                 data_json=str(json_path.resolve()),
-                data_images=str(images_path.resolve())
+                data_images=str(images_path.resolve()),
+                want_france=(args.france == True)
             )
 
     elif args.subcommand == "gen_gallery":
@@ -235,11 +258,17 @@ def main():
         from src import embed_database
 
         if args.cross:
-            from src.cross import model_cross
-            r_model = model_cross.CrossEncoder().to(embed_database.DEVICE)
+            from src.cross_view import model_cross
+            if args.france:
+                r_model = model_cross.CrossEncoder(LAT_MIN=LAT_MIN_F, LAT_MAX=LAT_MAX_F, LON_MIN=LON_MIN_F, LON_MAX=LON_MAX_F).to(embed_database.DEVICE)
+            else:
+                r_model = model_cross.CrossEncoder().to(embed_database.DEVICE)
         else:
-            from src import model
-            r_model = model.MixedEncoder().to(embed_database.DEVICE)
+            from base import model
+            if args.france:
+                r_model = model.MixedEncoder(LAT_MIN=LAT_MIN_F, LAT_MAX=LAT_MAX_F, LON_MIN=LON_MIN_F, LON_MAX=LON_MAX_F).to(embed_database.DEVICE)
+            else:
+                r_model = model.MixedEncoder().to(embed_database.DEVICE)
         r_model.load_state_dict(torch.load(str(model_path.resolve())))
         print(f"Dataset : {Path(args.dataset_folder)}")
         print(f"Model : {model_path}")
@@ -277,11 +306,17 @@ def main():
         from src import embed_database
 
         if args.cross:
-            from src.cross import model_cross
-            r_model = model_cross.CrossEncoder().to(embed_database.DEVICE)
+            from src.cross_view import model_cross
+            if args.france:
+                r_model = model_cross.CrossEncoder(LAT_MIN=LAT_MIN_F, LAT_MAX=LAT_MAX_F, LON_MIN=LON_MIN_F, LON_MAX=LON_MAX_F).to(embed_database.DEVICE)
+            else:
+                r_model = model_cross.CrossEncoder().to(embed_database.DEVICE)
         else:
-            from src import model
-            r_model = model.MixedEncoder().to(embed_database.DEVICE)
+            from base import model
+            if args.france:
+                r_model = model.MixedEncoder(LAT_MIN=LAT_MIN_F, LAT_MAX=LAT_MAX_F, LON_MIN=LON_MIN_F, LON_MAX=LON_MAX_F).to(embed_database.DEVICE)
+            else: 
+                r_model = model.MixedEncoder().to(embed_database.DEVICE)
         r_model.load_state_dict(torch.load(str(model_path.resolve())))
 
         print(f"Model : {model_path}")

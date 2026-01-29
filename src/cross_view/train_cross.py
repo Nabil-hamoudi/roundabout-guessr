@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from src.cross.dataset_cross import *
-from src.cross.model_cross import *
+from src.cross_view.dataset_cross import *
+from src.cross_view.model_cross import *
 from src.embed_database import *
 import random
 from torch.optim.lr_scheduler import CosineAnnealingLR
