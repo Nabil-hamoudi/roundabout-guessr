@@ -57,7 +57,7 @@ Position Guesseur
  - *embed_database.py* : Generation and visualization of embeddings.
    - *We can visualize via t-SNE, PCA, and PCA combined with geographical data*
  - *dataset\\* : Contains the dataset with *coordinates.json* and *data\\* (images). This folder does not exist in the repo but is expected here for certains application.
- - *cross\\* : Contains the code for cross-validation models.
+ - *cross\\* : Contains the code for cross models.
 
 ## Dataset
 
