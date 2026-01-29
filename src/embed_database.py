@@ -1,3 +1,4 @@
+import time
 import torch
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
@@ -244,12 +245,9 @@ def visualize_geo(pos_dict=None):
     plt.show()
 
 
-def init(model_path, data_path, json_path):
+def create_embeddings(model, data_path, json_path):
     pos = get_images_pos(json_path)
     imgs = get_images_paths(data_path)
-
-    model = MixedEncoder().to(DEVICE)
-    model.load_state_dict(torch.load(model_path))
 
     db = create_database(imgs, pos, model)
     torch.save(db, "embeddings_db.pt")
@@ -267,11 +265,40 @@ def pca_geo(embeding_path, json_path):
     pos = get_images_pos(json_path)
     compare_pca_geo(embeding_path, pos_dict=pos)
 
-def usemodel(model_path, embeding_path, image_path):
-    model = MixedEncoder().to(DEVICE)
-    model.load_state_dict(torch.load(model_path))
-
+def use_model(model, embeding_path, image_path):
     a = torch.load(embeding_path, weights_only=False)
 
     img = cv2.imread(image_path, cv2.IMREAD_COLOR)
-    print(get_closest(a, img, model))
+    return get_closest(a, img, model)
+
+def get_closest_locations(model, embeding_path, image_path, pos):
+    results = use_model(model, embeding_path, image_path)
+    pos = get_images_pos(pos)
+    from geopy.geocoders import Nominatim
+    geolocator = Nominatim(user_agent="guessr_amis_project")
+    for rank, (idx, score) in enumerate(results):
+        idx = int(idx)
+
+        try:
+            lat, lon = pos[idx]
+            
+            try:
+                location = geolocator.reverse(f"{lat}, {lon}", language='fr', exactly_one=True)
+                address = location.address if location else "Adresse inconnue"
+            except Exception as e:
+                address = f"Erreur de géocodage : {e}"
+
+            print(f"Rang {rank+1}")
+            print(f"Similarité : {score:.4f} (Confiance)")
+            print(f"GPS        : {lat:.6f}, {lon:.6f}")
+            print(f"Adresse    : {address}")
+            
+            # Lien Google Maps cliquable pour frimer
+            gmaps_link = f"https://www.google.com/maps/search/?api=1&query={lat},{lon}"
+            print(f"Google Maps: {gmaps_link}")
+            print("-" * 60)
+            
+            time.sleep(1)
+            
+        except KeyError:
+            print(f"ID {idx} non trouvé dans le fichier JSON des coordonnées.")

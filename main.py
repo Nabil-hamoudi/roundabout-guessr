@@ -1,10 +1,8 @@
 import argparse
 import sys
 from pathlib import Path
-from src import embed_database
-from src.cross import train_cross, model_cross
-from src import train_base
 
+import torch
 DESCRIPTIONCLI = "CLI pour ensemble des applications"
 HELPSUBPARSER = 'Entrainement et lancement du modele'
 HELPTRAIN = "Entraîner le modèle"
@@ -16,11 +14,12 @@ HELPMODEL = "Chemin vers le fichier du model"
 HELPEMBEDING = "Chemin vers le fichier des embeddings"
 HELPIMAGE = "Chemin vers le fichier de l'image"
 HELPINITEMBEDDING = "Generer les embeddings"
-HELPUSEMODEL = "Utiliser le modèle pour une image et les embeddings"
+HELPUSEMODEL = "Récupère les points les plus proches d'une image donnée"
 HELPTSNE = "Visualiser le tsne des embeddings"
 HELPPCA = "Visualiser le pca des embeddings"
 HELPPCAGEO = "Visualiser le pca des embeddings avec les coordonnées géographiques"
 HELPCROSS = 'Utiliser le modèle cross-view'
+HELPCOORDINATES = "Chemin vers le fichier des coordonnées"
 
 def main():
     parser = argparse.ArgumentParser(
@@ -70,7 +69,7 @@ def main():
 
     # Arguments positionnels (obligatoires)
     create_embedded_parser.add_argument(
-        "model_file",
+        "model_path",
         type=str,
         help=HELPMODEL
     )
@@ -89,26 +88,31 @@ def main():
 
 ####################################################################################
 ####################################################################################
-    use_model = subparsers.add_parser("model", help=HELPUSEMODEL)
+    use_model = subparsers.add_parser("get_closest", help=HELPUSEMODEL)
 
     # Arguments positionnels (obligatoires)
 
     use_model.add_argument(
-        "model_file",
+        "model_path",
         type=str,
         help=HELPMODEL
     )
 
     use_model.add_argument(
-        "embed_file",
+        "embed_path",
         type=str,
         help=HELPEMBEDING
     )
 
     use_model.add_argument(
-        "image",
+        "image_path",
         type=str,
         help=HELPIMAGE
+    )
+    use_model.add_argument(
+        "coordinates_path",
+        type=str,
+        help=HELPCOORDINATES
     )
 
     use_model.add_argument(
@@ -117,13 +121,14 @@ def main():
         action='store_true',
         default=False,
         dest="cross",
-        help=HELPCROSS)
+        help=HELPCROSS
+    )
 ####################################################################################
 ####################################################################################
     pca = subparsers.add_parser("pca", help=HELPPCA)
 
     pca.add_argument(
-        "embed_file",
+        "embed_path",
         type=str,
         help=HELPEMBEDING
     )
@@ -139,7 +144,7 @@ def main():
     )
 
     pcageo.add_argument(
-        "embed_file",
+        "embed_path",
         type=str,
         help=HELPEMBEDING
     )
@@ -156,7 +161,7 @@ def main():
     )
 
     tsne.add_argument(
-        "embed_file",
+        "embed_path",
         type=str,
         help=HELPEMBEDING
     )
@@ -193,6 +198,7 @@ def main():
                 if not sat_path.exists():
                     print(f"Erreur : Le dossier {sat_path} n'existe pas.")
                     return
+                from src.cross import train_cross
                 train_cross.train_cross(
                 nb_epoch=args.nb_epoch,
                 batch_size=args.batch_size,
@@ -202,6 +208,7 @@ def main():
                 data_sat=str(sat_path.resolve())
             )
         else:
+            from src import train_base
             train_base.train_base(
                 nb_epoch=args.nb_epoch,
                 batch_size=args.batch_size,
@@ -212,8 +219,8 @@ def main():
 
     elif args.subcommand == "gen_gallery":
         json_path = Path(args.dataset_folder).joinpath("coordinates.json")
-        images_path = Path(args.dataset_folder).joinpath("data")
-        model = Path(args.model_file)
+        images_path = Path(args.dataset_folder).joinpath("img")
+        model_path = Path(args.model_path)
         if not images_path.exists():
             print(f"Erreur : Le dossier {images_path} n'existe pas.")
             return
@@ -222,50 +229,75 @@ def main():
             print(f"Erreur : Le fichier {json_path} n'existe pas.")
             return
 
-        if not model.exists():
-            print(f"Erreur : Le fichier {model} n'existe pas.")
+        if not model_path.exists():
+            print(f"Erreur : Le fichier {model_path} n'existe pas.")
             return
+        from src import embed_database
 
+        if args.cross:
+            from src.cross import model_cross
+            r_model = model_cross.CrossEncoder().to(embed_database.DEVICE)
+        else:
+            from src import model
+            r_model = model.MixedEncoder().to(embed_database.DEVICE)
+        r_model.load_state_dict(torch.load(str(model_path.resolve())))
         print(f"Dataset : {Path(args.dataset_folder)}")
-        print(f"Model : {model}")
+        print(f"Model : {model_path}")
 
-        embed_database.init(
-            model,
-            images_path,
-            json_path
+        embed_database.create_embeddings(
+            r_model,
+            str(images_path.resolve()),
+            str(json_path.resolve())
         )
 
+        print("Embeddings calculés et sauvegardés dans embeddings_db.pt")
 
-    elif args.subcommand == "model":
-        embed = Path(args.embed_file)
-        model = Path(args.model_file)
-        image = Path(args.image)
+
+    elif args.subcommand == "get_closest":
+        embed = Path(args.embed_path)
+        model_path = Path(args.model_path)
+        image = Path(args.image_path)
+        coordinates = Path(args.coordinates_path)
     
         if not image.exists():
             print(f"Erreur : Le fichier {image} n'existe pas.")
             return
 
         if not embed.exists():
-            print(f"Erreur : Le fichier {json_path} n'existe pas.")
+            print(f"Erreur : Le fichier {embed} n'existe pas.")
             return
 
-        if not model.exists():
-            print(f"Erreur : Le fichier {model} n'existe pas.")
+        if not model_path.exists():
+            print(f"Erreur : Le fichier {model_path} n'existe pas.")
             return
 
         print(f"Embeddings : {embed}")
-        print(f"Model : {model}")
+        print(f"Model : {model_path}")
+        print(f"Image : {image}")
+        from src import embed_database
+
+        if args.cross:
+            from src.cross import model_cross
+            r_model = model_cross.CrossEncoder().to(embed_database.DEVICE)
+        else:
+            from src import model
+            r_model = model.MixedEncoder().to(embed_database.DEVICE)
+        r_model.load_state_dict(torch.load(str(model_path.resolve())))
+
+        print(f"Model : {model_path}")
+        print(f"Embeddings : {embed}")
         print(f"Image : {image}")
 
-        embed_database.usemodel(
-            model,
-            embed,
-            image
+        embed_database.get_closest_locations(
+            r_model,
+            str(embed.resolve()),
+            str(image.resolve()),
+            str(coordinates.resolve())
         )
 
     elif args.subcommand in "tsne":
         json_path = Path(args.dataset_folder).joinpath("coordinates.json")
-        embed = Path(args.embed_file)
+        embed = Path(args.embed_path)
         if not embed.exists():
             print(f"Erreur : Le fichier {embed} n'existe pas.")
             return
@@ -284,7 +316,7 @@ def main():
 
     elif args.subcommand in "pca_geo":
         json_path = Path(args.dataset_folder).joinpath("coordinates.json")
-        embed = Path(args.embed_file)
+        embed = Path(args.embed_path)
         if not embed.exists():
             print(f"Erreur : Le fichier {embed} n'existe pas.")
             return
@@ -302,7 +334,7 @@ def main():
         )
 
     elif args.subcommand in "pca":
-        embed = Path(args.embed_file)
+        embed = Path(args.embed_path)
         if not embed.exists():
             print(f"Erreur : Le fichier {embed} n'existe pas.")
             return
