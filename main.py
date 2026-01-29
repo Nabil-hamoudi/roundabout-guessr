@@ -2,6 +2,7 @@ import argparse
 import sys
 from pathlib import Path
 from src import train_clip, embed_database
+from src.cross import train_cross, model_cross
 
 DESCRIPTIONCLI = "CLI pour ensemble des applications"
 HELPSUBPARSER = 'Entrainement et lancement du modele'
@@ -18,6 +19,7 @@ HELPUSEMODEL = "Utiliser le modèle pour une image et les embeddings"
 HELPTSNE = "Visualiser le tsne des embeddings"
 HELPPCA = "Visualiser le pca des embeddings"
 HELPPCAGEO = "Visualiser le pca des embeddings avec les coordonnées géographiques"
+HELPCROSS = 'Utiliser le modèle cross'
 
 def main():
     parser = argparse.ArgumentParser(
@@ -54,6 +56,12 @@ def main():
         default=None,
         help=HELPBATCHCOMBI
     )
+    trainparser.add_argument(
+        '-c',
+        '--cross',
+        action='store_true',
+        default=False,
+        help=HELPCROSS)
 
 ####################################################################################
 ####################################################################################
@@ -71,6 +79,12 @@ def main():
         type=str,
         help=HELPDATASET
     )
+    createembededparser.add_argument(
+        '-c',
+        '--cross',
+        action='store_true',
+        default=False,
+        help=HELPCROSS)
 
 ####################################################################################
 ####################################################################################
@@ -94,6 +108,14 @@ def main():
         type=str,
         help=HELPIMAGE
     )
+
+    tsne.add_argument(
+        '-c',
+        '--cross',
+        action='store_true',
+        default=False,
+        dest="cross",
+        help=HELPCROSS)
 ####################################################################################
 ####################################################################################
     pca = subparsers.add_parser("pca", help=HELPPCA)
@@ -119,6 +141,7 @@ def main():
         type=str,
         help=HELPEMBEDING
     )
+
 ####################################################################################
 ####################################################################################
     tsne = subparsers.add_parser("tsne", help=HELPTSNE)
@@ -135,8 +158,8 @@ def main():
         type=str,
         help=HELPEMBEDING
     )
-####################################################################################
 
+####################################################################################
 
     args = parser.parse_args()
 
@@ -163,13 +186,22 @@ def main():
             batch_combined = args.batch_combined
 
         # Lancer l'entraînement
-        train_clip.train_clip(
-            nbr_epoch=args.nbr_epoch,
-            batch_size=args.batch_size,
-            batch_combined=batch_combined,
-            datajson=str(json_path),
-            dataimages=str(images_path)
-        )
+        if args.cross:
+                train_cross.train_cross(
+                nbr_epoch=args.nbr_epoch,
+                batch_size=args.batch_size,
+                batch_combined=batch_combined,
+                datajson=str(json_path),
+                dataimages=str(images_path)
+            )
+        else:
+            train_clip.train_clip(
+                nbr_epoch=args.nbr_epoch,
+                batch_size=args.batch_size,
+                batch_combined=batch_combined,
+                datajson=str(json_path),
+                dataimages=str(images_path)
+            )
 
     elif args.subcommand == "embedgen":
         json_path = Path(args.dataset_folder).joinpath("coordinates.json")
