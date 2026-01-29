@@ -10,7 +10,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 DEVICE_STR = "cuda" if torch.cuda.is_available() else "cpu"
 def create_database(imgs, pos, model):
 
-    print("Creating the databse")
+    print("Creating the database")
     model.eval()
     """
     Le format là en gros c'est 
