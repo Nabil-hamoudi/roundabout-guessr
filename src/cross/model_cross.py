@@ -159,9 +159,9 @@ class ImageEncoder(nn.Module):
         return F.normalize(embeddings, p=2, dim=1)
 
 #il mixe les deux
-class MixedEncoder(nn.Module):
+class CrossEncoder(nn.Module):
     def __init__(self):
-        super(MixedEncoder, self).__init__()
+        super().__init__()
         self.image_encoder = ImageEncoder()
         self.location_encoder = LocationEncoder()
         self.sat_encoder = ImageEncoder()

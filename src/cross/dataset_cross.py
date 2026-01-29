@@ -44,17 +44,13 @@ def get_images_pos(path):
     return coords
 
 def get_images_paths(path="yo/data"):
-    if  path == "gen_fr/data_france":
-        files = sorted(Path(path).glob("fr_*.jpg"), key=lambda f: int(f.stem.split("_")[1]))
-    elif path == "gen_fr/data_paris":
-        files = sorted(Path(path).glob("paris_*.jpg"), key=lambda f: int(f.stem.split("_")[1]))
-    elif path == "gen_fr/sat_paris":
-        files = sorted(Path(path).glob("sat_paris_*.jpg"), key=lambda f: int(f.stem.split("_")[2]))
-    else:
-        files = sorted(Path(path).glob("img_*.jpg"), key=lambda f: int(f.stem.split("_")[1]))
-    return files
+    files = list(Path(path).glob("*.jpg"))
+    #print("alo", path, len(list(files)))
 
-class ImagesPosDataset(Dataset):
+    return sorted(files, key=lambda f: int(f.stem.split("_")[-1]))
+
+
+class CrossDataset(Dataset):
     def __init__(self, images_paths, images_positions, sat_paths, want_index = False, is_train=False):
         self.images_paths = images_paths
         self.positions = images_positions
@@ -145,7 +141,7 @@ if __name__ == "__main__":
     pos = get_images_pos("yo/coordinates.json")
     imgs_paths = get_images_paths()
     sat_paths = get_images_paths("yo/sat")
-    ds = ImagesPosDataset(imgs_paths, pos, sat_paths)
+    ds = CrossDataset(imgs_paths, pos, sat_paths)
 
     for elem in ds:
         print(elem)

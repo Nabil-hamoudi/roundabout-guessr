@@ -45,12 +45,10 @@ def get_images_pos(path):
     return coords
 
 def get_images_paths(path="yo/data"):
-    if path == "gen_fr/data_france":
-        files = sorted(Path(path).glob("fr_*.jpg"), key=lambda f: int(f.stem.split("_")[1]))
-    else:
-        files = sorted(Path(path).glob("img_*.jpg"), key=lambda f: int(f.stem.split("_")[1]))
-    return files
+    files = list(Path(path).glob("*.jpg"))
+    #print("alo", path, len(list(files)))
 
+    return sorted(files, key=lambda f: int(f.stem.split("_")[-1]))
 class ImagesPosDataset(Dataset):
     def __init__(self, images_paths, images_positions, want_index = False, is_train=False):
         self.images_paths = images_paths

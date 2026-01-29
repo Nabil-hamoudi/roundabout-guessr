@@ -1,12 +1,13 @@
 import argparse
 import sys
 from pathlib import Path
-from src import train_clip, embed_database
+from src import embed_database
 from src.cross import train_cross, model_cross
+from src import train_base
 
 DESCRIPTIONCLI = "CLI pour ensemble des applications"
 HELPSUBPARSER = 'Entrainement et lancement du modele'
-HELPTRAIN = "Entraîner le modèle CLIP"
+HELPTRAIN = "Entraîner le modèle"
 HELPEPOCH = "Nombre d'epochs pour l'entraînement"
 HELPBATCH = "Taille du batch"
 HELPBATCHCOMBI = "Taille du batch combiné"
@@ -19,7 +20,7 @@ HELPUSEMODEL = "Utiliser le modèle pour une image et les embeddings"
 HELPTSNE = "Visualiser le tsne des embeddings"
 HELPPCA = "Visualiser le pca des embeddings"
 HELPPCAGEO = "Visualiser le pca des embeddings avec les coordonnées géographiques"
-HELPCROSS = 'Utiliser le modèle cross'
+HELPCROSS = 'Utiliser le modèle cross-view'
 
 def main():
     parser = argparse.ArgumentParser(
@@ -30,33 +31,33 @@ def main():
 
 ####################################################################################
 
-    trainparser = subparsers.add_parser("train", help=HELPTRAIN)
+    train_parser = subparsers.add_parser("train", help=HELPTRAIN)
     # Arguments positionnels (obligatoires)
-    trainparser.add_argument(
-        "nbr_epoch",
+    train_parser.add_argument(
+        "nb_epoch",
         type=int,
         help=HELPEPOCH
     )
-    trainparser.add_argument(
+    train_parser.add_argument(
         "batch_size",
         type=int,
         help=HELPBATCH
     )
-    trainparser.add_argument(
+    train_parser.add_argument(
         "dataset_folder",
         type=str,
         help=HELPDATASET
     )
     
     # Argument OPTIONNEL (commence par des tirets)
-    trainparser.add_argument(
-        '-bc', '--batchcombined',
+    train_parser.add_argument(
+        '-bc', '--batch_combined',
         dest="batch_combined", # Nom utilisé dans args.batch_combined
         type=int,
         default=None,
         help=HELPBATCHCOMBI
     )
-    trainparser.add_argument(
+    train_parser.add_argument(
         '-c',
         '--cross',
         action='store_true',
@@ -65,21 +66,21 @@ def main():
 
 ####################################################################################
 ####################################################################################
-    createembededparser = subparsers.add_parser("embedgen", help=HELPINITEMBEDDING)
+    create_embedded_parser = subparsers.add_parser("gen_gallery", help=HELPINITEMBEDDING)
 
     # Arguments positionnels (obligatoires)
-    createembededparser.add_argument(
+    create_embedded_parser.add_argument(
         "model_file",
         type=str,
         help=HELPMODEL
     )
 
-    createembededparser.add_argument(
+    create_embedded_parser.add_argument(
         "dataset_folder",
         type=str,
         help=HELPDATASET
     )
-    createembededparser.add_argument(
+    create_embedded_parser.add_argument(
         '-c',
         '--cross',
         action='store_true',
@@ -88,28 +89,29 @@ def main():
 
 ####################################################################################
 ####################################################################################
-    usemodel = subparsers.add_parser("model", help=HELPUSEMODEL)
+    use_model = subparsers.add_parser("model", help=HELPUSEMODEL)
 
     # Arguments positionnels (obligatoires)
-    usemodel.add_argument(
+
+    use_model.add_argument(
         "model_file",
         type=str,
         help=HELPMODEL
     )
 
-    usemodel.add_argument(
+    use_model.add_argument(
         "embed_file",
         type=str,
         help=HELPEMBEDING
     )
 
-    usemodel.add_argument(
+    use_model.add_argument(
         "image",
         type=str,
         help=HELPIMAGE
     )
 
-    tsne.add_argument(
+    use_model.add_argument(
         '-c',
         '--cross',
         action='store_true',
@@ -167,7 +169,8 @@ def main():
 
     if args.subcommand == "train":
         json_path = Path(args.dataset_folder).joinpath("coordinates.json")
-        images_path = Path(args.dataset_folder).joinpath("data")
+        images_path = Path(args.dataset_folder).joinpath("img")
+        sat_path = Path(args.dataset_folder).joinpath("sat")
 
         if not images_path.exists():
             print(f"Erreur : Le dossier {images_path} n'existe pas.")
@@ -187,23 +190,27 @@ def main():
 
         # Lancer l'entraînement
         if args.cross:
+                if not sat_path.exists():
+                    print(f"Erreur : Le dossier {sat_path} n'existe pas.")
+                    return
                 train_cross.train_cross(
-                nbr_epoch=args.nbr_epoch,
+                nb_epoch=args.nb_epoch,
                 batch_size=args.batch_size,
                 batch_combined=batch_combined,
-                datajson=str(json_path),
-                dataimages=str(images_path)
+                data_json=str(json_path.resolve()),
+                data_images=str(images_path.resolve()),
+                data_sat=str(sat_path.resolve())
             )
         else:
-            train_clip.train_clip(
-                nbr_epoch=args.nbr_epoch,
+            train_base.train_base(
+                nb_epoch=args.nb_epoch,
                 batch_size=args.batch_size,
                 batch_combined=batch_combined,
-                datajson=str(json_path),
-                dataimages=str(images_path)
+                data_json=str(json_path.resolve()),
+                data_images=str(images_path.resolve())
             )
 
-    elif args.subcommand == "embedgen":
+    elif args.subcommand == "gen_gallery":
         json_path = Path(args.dataset_folder).joinpath("coordinates.json")
         images_path = Path(args.dataset_folder).joinpath("data")
         model = Path(args.model_file)

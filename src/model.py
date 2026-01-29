@@ -152,7 +152,7 @@ class ImageEncoder(nn.Module):
 #il mixe les deux
 class MixedEncoder(nn.Module):
     def __init__(self):
-        super(MixedEncoder, self).__init__()
+        super().__init__()
         self.image_encoder = ImageEncoder()
         self.location_encoder = LocationEncoder()
         self.logit_scale = nn.Parameter(torch.ones([]) * 2.6592)
