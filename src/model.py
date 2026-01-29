@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import rff
-import copy
-
 
 #Projection prise du code de GeoCLIP !
 #Pas nécessaire pour la France, on a quand même gardé

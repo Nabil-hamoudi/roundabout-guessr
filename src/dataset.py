@@ -1,5 +1,4 @@
 import json
-from matplotlib import transforms
 import torch
 from torch.utils.data import Dataset
 import numpy as np
@@ -7,9 +6,7 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import cv2
 from pathlib import Path
-import random
 import math
-from sklearn.neighbors import BallTree
 
 
 IMAGENET_MEAN = (0.485, 0.456, 0.406)

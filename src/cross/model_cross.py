@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import rff
-import copy
 import numpy as np
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LAT_MIN, LAT_MAX = 48.77, 48.97
