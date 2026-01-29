@@ -2,10 +2,9 @@ import time
 import torch
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
-from src.dataset import *
+from src.base.dataset import *
 from tqdm import tqdm
 import cv2
-from src.model import MixedEncoder
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 DEVICE_STR = "cuda" if torch.cuda.is_available() else "cpu"
 def create_database(imgs, pos, model):
