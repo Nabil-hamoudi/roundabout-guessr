@@ -1,29 +1,29 @@
-import sys
-sys.path.append("..")
-
 import torch
 import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader, Subset
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 from dataset import *
-from model_cross import *
+from model import *
 from embed_database import *
 import random
 from torch.optim.lr_scheduler import CosineAnnealingLR
 import json
 from datetime import datetime
+import numpy as np
+import random
+from collections import defaultdict
+
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 DEVICE_STR = "cuda" if torch.cuda.is_available() else "cpu"
 
 NBR_EPOCH = 150
 BATCH_SIZE = 32
-BATCH_COMBINED = 256
+INFERENCE_BATCH_SIZE = 32
+BATCH_COMBINED = 600
 DATAFOLDER = "gen_fr"
 DATAJSON = DATAFOLDER + "/coordinates_paris.json"
 DATAIMAGES = DATAFOLDER + "/data_paris"
 DATASAT = DATAFOLDER + "/sat_paris"
-
 def physical_dist(latlon1, latlon2):
     R = 6371.0
     dlat = torch.deg2rad(latlon1[:, 0] - latlon2[:, 0]) #[Batch, 2] pour tous les latlon
@@ -104,58 +104,134 @@ def model_validation(model, val_loader, distance_thresholds_km=[0.1, 0.25, 1, 2]
     
     return median_error  #on retourne la médiane aps la moyenne !
 
-def geographic_split(image_paths, positions, sat_paths, val_split_pct=0.1, cell_size_deg=0.004):
+def validate_retrieval(model, clean_train_loader, val_loader):
     """
-    S'occupe de faire le split en grille du dataset.
-    L'objectif est d'éviter la contamination entre train et val.
-    cell_size_deg : taille d'une cellule en degrés (0.004° ~ 444m)
-    val_split_pct : pourcentage de données à mettre en validation (ex: 0.1 = 10%)
-    Renvoie : train_dataset, val_dataset
+    A partir d'un modèle, d'un loader d'entraînement SANS AUGMENTATIONS et d'un loader du set de validation
+    """
+    model.eval()
+    
+    print("Construction de la Galerie...")
+    gallery_feats = []
+    gallery_locs = []
+    
+    with torch.no_grad():
+        for imgs, locs, sat_imgs in tqdm(clean_train_loader):
+            imgs = imgs.to(DEVICE)
+            with torch.autocast(device_type=DEVICE_STR, dtype=torch.float16):
+                feats, _, _, _ = model(imgs, locs.to(DEVICE), sat_imgs.to(DEVICE))
+            
+            gallery_feats.append(feats.cpu())
+            gallery_locs.append(locs)
+
+    gallery_feats = torch.cat(gallery_feats, dim=0) # [N_train, 512]
+    gallery_locs = torch.cat(gallery_locs, dim=0)   # [N_train, 2]
+    
+    # Normalisation pour la distance cosinus
+    gallery_feats = F.normalize(gallery_feats, p=2, dim=1)
+
+    print("Lancement des requêtes sur le validation set...")
+    query_feats = []
+    query_true_locs = []
+    
+    with torch.no_grad():
+        for imgs, locs, sat_imgs in tqdm(val_loader):
+            imgs = imgs.to(DEVICE)
+            with torch.autocast(device_type=DEVICE_STR, dtype=torch.float16):
+                feats, _, _, _ = model(imgs, locs.to(DEVICE), sat_imgs.to(DEVICE))
+            
+            query_feats.append(feats.cpu())
+            query_true_locs.append(locs)
+
+    query_feats = torch.cat(query_feats, dim=0)
+    query_feats = F.normalize(query_feats, p=2, dim=1)
+    query_true_locs = torch.cat(query_true_locs, dim=0)
+
+    similarity = query_feats @ gallery_feats.T 
+    _, top1_indices = similarity.max(dim=1) 
+    
+    pred_locs = gallery_locs[top1_indices]
+    
+    dist_meters = physical_dist(query_true_locs, pred_locs) * 1000  # en mètres
+    
+    median_error = torch.median(dist_meters).item()
+
+    print(f"\n--- Résultats Retrieval ---")
+    print(f"Erreur Médiane : {median_error:.1f} mètres")
+
+    print(f"R@50m : {(dist_meters < 50).float().mean()*100:.1f}%")
+    print(f"R@200m: {(dist_meters < 200).float().mean()*100:.1f}%")
+    print(f"R@500m: {(dist_meters < 500).float().mean()*100:.1f}%") 
+    print(f"R@1km : {(dist_meters < 1000).float().mean()*100:.1f}%") 
+    
+    return median_error
+
+def panorama_split(image_paths, positions, sat_paths, val_split_pct=0.1, want_clean = False):
+    """
+    Sampling des panoramas
+    
+    IMPORTANT : On groupe par position exacte (Lat, Lon) pour s'assurer 
+    que les vues  d'un même panorama restent ensemble  la fuite
+    de données.
     """
     
-    positions_np = np.array(positions)
-    #print(len(positions))
-    #print(len(image_paths))
     min_len = min(len(positions), len(image_paths), len(sat_paths))
-    positions_np = positions_np[:min_len]
-    paths_np = np.array(image_paths[:min_len])
-    sat_paths_np = np.array(sat_paths[:min_len])
+    positions_np = np.array(positions)[:min_len]
+    paths_np = np.array(image_paths)[:min_len]
+    sat_paths_np = np.array(sat_paths)[:min_len]
     
-    lats = positions_np[:, 0]
-    lons = positions_np[:, 1]
+    print(f"\n--- Random Location Split ---")
+
+    # Clé = (Lat, Lon) arrondi, Valeur = liste des indices
+    location_groups = defaultdict(list)
     
-    grid_x = (lats // cell_size_deg).astype(int)
-    grid_y = (lons // cell_size_deg).astype(int)
+    for idx, pos in enumerate(positions_np):
+        loc_key = (round(pos[0], 6), round(pos[1], 6))
+        location_groups[loc_key].append(idx)
+        
+    unique_locations = list(location_groups.keys())
+    random.seed(42)
+    random.shuffle(unique_locations)
     
-    #on convertit val_split_pck en vrai pct
-    mod_factor = int(1 / val_split_pct)
+    #Calcul du Split sur les LIEUX (et pas les images)
+    n_locs = len(unique_locations)
+    n_val_locs = int(n_locs * val_split_pct)
+    n_train_locs = n_locs - n_val_locs
     
-    #pour motif en "diag"
-    is_val_mask = ((grid_x + grid_y) % mod_factor) == 0
+    train_loc_keys = unique_locations[:n_train_locs]
+    val_loc_keys = unique_locations[n_train_locs:]
     
-    train_paths = paths_np[~is_val_mask].tolist()
-    train_pos = positions_np[~is_val_mask].tolist()
-    train_sat_paths = sat_paths_np[~is_val_mask].tolist()
-    val_paths = paths_np[is_val_mask].tolist()
-    val_pos = positions_np[is_val_mask].tolist()
-    val_sat_paths = sat_paths_np[is_val_mask].tolist()
+    train_indices = []
+    for key in train_loc_keys:
+        train_indices.extend(location_groups[key])
+        
+    val_indices = []
+    for key in val_loc_keys:
+        val_indices.extend(location_groups[key])
+        
+    train_paths = paths_np[train_indices].tolist()
+    train_pos = positions_np[train_indices].tolist()
+    train_sat_paths = sat_paths_np[train_indices].tolist()
     
-    print(f"\n--- Geographic Split (Cell: ~{cell_size_deg*111:.1f} km) ---")
-    print(f"Total images   : {len(paths_np)}")
-    print(f"Train samples  : {len(train_paths)}")
-    print(f"Val samples    : {len(val_paths)} ({len(val_paths)/len(paths_np):.1%})")
+    val_paths = paths_np[val_indices].tolist()
+    val_pos = positions_np[val_indices].tolist()
+    val_sat_paths = sat_paths_np[val_indices].tolist()
     
-    unique_train_cells = len(set(zip(grid_x[~is_val_mask], grid_y[~is_val_mask])))
-    unique_val_cells = len(set(zip(grid_x[is_val_mask], grid_y[is_val_mask])))
-    print(f"Cellules actives (Zones géo distinctes) : Train={unique_train_cells}, Val={unique_val_cells}")
+    print(f"Total : {n_locs}")
+    print(f"Train samples : {len(train_paths)} images (sur {n_train_locs} lieux)")
+    print(f"Val samples   : {len(val_paths)} images (sur {len(val_loc_keys)} lieux)")
+    print(f"Ratio effectif : {len(val_paths)/min_len:.1%}")
 
     train_dataset = ImagesPosDataset(
         train_paths, train_pos, train_sat_paths, want_index=False, is_train=True
     )
-    
     val_dataset = ImagesPosDataset(
         val_paths, val_pos, val_sat_paths, want_index=False, is_train=False
     )
+    train_dataset_clean = ImagesPosDataset(
+        train_paths, train_pos, train_sat_paths, want_index=False, is_train=False)
+
+    if want_clean:
+        return train_dataset, val_dataset, train_dataset_clean
     
     return train_dataset, val_dataset
 
@@ -190,9 +266,9 @@ def criterion_duplicates(img_embed, loc_embed,sat_embed, logit_scale, positions)
     eye = torch.eye(B, device=img_embed.device, dtype=torch.bool)
     valid_mask = eye | (~is_duplicate)
 
-    coef_img_loc = 1.0
-    coef_img_sat = 1.0
-    coef_sat_loc = 0.3
+    coef_img_loc = 0.4
+    coef_img_sat = 0.4
+    coef_sat_loc = 0.2
 
     loss_img_loc = compute_pair_loss(img_embed, loc_embed, logit_scale, valid_mask)
     loss_img_sat = compute_pair_loss(img_embed, sat_embed, logit_scale, valid_mask)
@@ -224,7 +300,7 @@ def train_clip(nbr_epoch=NBR_EPOCH, batch_size=BATCH_SIZE, batch_combined=BATCH_
     #    [0.95, 0.05], 
     #    generator=generator1
     #)
-    train_dataset, val_dataset = geographic_split(imgs, pos, sat_paths)
+    train_dataset, val_dataset, train_dataset_clean = panorama_split(imgs, pos, sat_paths, want_clean=True)
 
     #val_dataset = copy.deepcopy(val_dataset)
     #val_dataset.dataset.is_train = False
@@ -237,6 +313,7 @@ def train_clip(nbr_epoch=NBR_EPOCH, batch_size=BATCH_SIZE, batch_combined=BATCH_
 
     #Gérer la validation après déjà je veux faire en sorte que ça forward
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, num_workers=2, shuffle=True)
+    train_clean_loader = DataLoader(train_dataset_clean, batch_size=INFERENCE_BATCH_SIZE, num_workers=2)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, num_workers=2)
     criterion = nn.CrossEntropyLoss()#BatchHardLoss()
     optimizer = torch.optim.AdamW([
@@ -307,6 +384,7 @@ def train_clip(nbr_epoch=NBR_EPOCH, batch_size=BATCH_SIZE, batch_combined=BATCH_
                 accum_pos_coords = []
                 accum_pred_sat = []
                 batch_count = 0
+            #break
 
         if batch_count > 0:
             big_pred_img = torch.cat(accum_pred_img, dim=0)
@@ -334,8 +412,11 @@ def train_clip(nbr_epoch=NBR_EPOCH, batch_size=BATCH_SIZE, batch_combined=BATCH_
         #print(f"logit_scale = {model.logit_scale.exp().item():.2f}")
 
         print("Début de la validation : ")
+        #loss = model_validation(model, val_loader)#, criterion)
         loss = model_validation(model, val_loader)#, criterion)
 
+        if epoch % 5 == 0 and epoch > 0:
+            loss = validate_retrieval(model, train_clean_loader, val_loader)
         log_entry = {
             "epoch": epoch,
             "train_loss": total_loss / max(1, len(train_loader)/(BATCH_COMBINED/BATCH_SIZE)),
