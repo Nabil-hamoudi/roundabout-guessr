@@ -19,7 +19,7 @@
 
 > streetlevel 
 
-#### Quick install
+## Quick install
 
 ```sh
 py -m pip install tqdm torch torchvision numpy matplotlib opencv-python albumentations rff
@@ -38,17 +38,21 @@ Position Guesseur
 │   │   train_clip.py
 │   │ 
 │   └───cross\
-│   │   dataset_cross.py
-│   │   model_cross.py
-│   │   train_cross.py
+│       │   dataset_cross.py
+│       │   model_cross.py
+│       │   train_cross.py
 │  
-└───dataset\
+└───dataset\  
     │   coordinates.json
     │
+    └───data_sat\ [OPTIONAL]
+    │    │ sat_0.jpg
+    │    │ dat_1.jpg
+    │    │ ...
+    │  
     └───data\
-        │ image
-        │ img_00000.jpg
-        │ img_00001.jpg
+        │ img_0.jpg
+        │ img_1.jpg
         │ ...
 ```
 
@@ -56,8 +60,8 @@ Position Guesseur
  - *model.py* : Training of the model; generates *model_x.pt* at every epoch.
  - *embed_database.py* : Generation and visualization of embeddings.
    - *We can visualize via t-SNE, PCA, and PCA combined with geographical data*
- - *dataset\\* : Contains the dataset with *coordinates.json* and *data\\* (images). This folder does not exist in the repo but is expected here for certains application.
- - *cross\\* : Contains the code for cross models.
+ - *dataset\\* : Contains the dataset with *coordinates.json*, *data\\* (images) and *data_sat\\* (satellite images) this images are use for cross model there are optional. This folder does not exist in the repo but is expected here for certains application.
+ - *cross\\* : Contains the code for cross model.
 
 ## Dataset
 
@@ -66,9 +70,6 @@ Position Guesseur
  - All images have a corresponding entry in "coordinates.json" containing data/annotations.
 
 Using this method, we generated multiple datasets for testing and results. The scraped locations are:
- - Europe
-   - Dataset 100,000 images randomized across Europe.
-     - https://drive.google.com/file/d/1aDkgoxi4nJpMNihFDOXAMcmLLjr_qjT_/view?usp=drive_link
  - France
    - Dataset: 70,000 images randomized, concentrated in the 50 biggest cities of France.
      - https://drive.google.com/file/d/1YalWVF-CK_d6iy4c440gwfKzVtNhZHmN/view?usp=drive_link
@@ -78,8 +79,8 @@ Using this method, we generated multiple datasets for testing and results. The s
    - xxxxxxxxxx
      - xxxxxxxxxx
 
-Every dataset folder for our project must have a *coordinates.json* file and a *data\\* folder containing images named with the prefix *img_* followed by their *id* and *extension*.
- - For example *img_00000.jpg*  
+>Every dataset folder for our project must have a *coordinates.json* file and a *data\\* folder containing images named with the prefix *img_* followed by their *id* and *extension* (optionally the prefix *sat_* followed by their *id* and *extension* ). For each images we can have Satelite images in *data_sat\\* if we use the cross model.
+ - For example *img_0.jpg* (optionally *sat_0.jpg* the satelite image linked to it).  
 In *coordinates.json* for each image the data is formed this way:
 
 ```json
@@ -106,9 +107,8 @@ In *coordinates.json* for each image the data is formed this way:
 | `h_deg` | integer | Horizontal angle in degrees [0 - 360] |
 | `v_deg` | integer | Vertical angle in degrees [0 - 360] |
 
-
 ## CLI
-```
+```sh
 python main.py <commande> [arguments]
 ```
 
@@ -123,16 +123,13 @@ Every commands use an application of our project:
  - *pca_geo* : Visualize the PCA from the embeddings with geographiques coordinnates
  - *tsne* :  Visualize the TSNE from the embeddings
 
+> With the argument *cross* we can change the model we use between the base model and cross model.
+
 ## Models
 
 We have generated differents models:
- - Europe
-   - Models with dataset 100 000 images randomised in all of Europe.
-     - https://drive.google.com/drive/folders/1kqyaHBD3JqXZJsEgdQGnw67GCDXQFl9f?usp=sharing
  - France
    - Models with 70 000 images randomised concentrated in the 50 biggest city of France.
-     - xxxxxxxxxxxxxxxx
-   - Models with 300 000 images randomised in all France.
      - xxxxxxxxxxxxxxxx
  - Paris
    - xxxxxxxxxx
