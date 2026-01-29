@@ -157,11 +157,16 @@ def main():
         print(f"Dataset : {Path(args.dataset_folder)}")
         print(f"Batch combined : {args.batch_combined}")
 
+        if args.batch_combined is None:
+            batch_combined = args.batch_size
+        else:
+            batch_combined = args.batch_combined
+
         # Lancer l'entraînement
         train_clip.train_clip(
             nbr_epoch=args.nbr_epoch,
             batch_size=args.batch_size,
-            batch_combined=args.batch_combined,
+            batch_combined=batch_combined,
             datajson=str(json_path),
             dataimages=str(images_path)
         )
