@@ -4,7 +4,7 @@
 
 ## 📝 Overview
 
-**Position Guessr** is a Deep Learning project aiming to retrieve the precise geographical coordinates (latitude, longitude) of a location based solely on a street-level photograph.
+**Position Guessr** is a Deep Learning project aiming to retrieve the precise geographical coordinates (latitude, longitude) of a location based on a street-level photograph.
 
 Inspired by the [GeoCLIP](https://arxiv.org/abs/2309.16020) architecture, our model aligns visual features (from streetview images and satellites images) with spatial features (coordinates) using Contrastive Learning.
 
@@ -71,7 +71,7 @@ python main.py get_closest -c model_paris_50k.pt embeddings_paris_50k.pt ./test_
 ## 📂Project Structure
 
 ```
-Position Guesseur
+Position Guessr
 ├── main.py                     # CLI Entry point
 ├── src/
 │   ├── base/                   # Standard Model (Image <-> Location)
@@ -110,11 +110,13 @@ Our approach relies on **Deep Metric Learning**:
    * It maximizes similarity between an image and its location.
    * It treats physically close locations (e.g., < 10m) as valid positives (masking) to avoid false negatives during contrastive learning.
 
-You can learn more about the architecture in the "model_explained.ipynb" or only [here](https://colab.research.google.com/drive/1VPylq210Usa3KIG8PUrhk0AHZs1yfn7l?usp=sharing) !
+You can learn more about the architecture in the "model_explained.ipynb" or online [here](https://colab.research.google.com/drive/1VPylq210Usa3KIG8PUrhk0AHZs1yfn7l?usp=sharing) !
 
 ## 💾 Datasets
 
 > Our data is scraped from Google Street View. Each dataset must contain a `coordinates.json` file and an image folder. We pick random coordinates in certain places and use the library *streetlevel* to get the Google Panorama ID and image.
+>
+> Satellite images are collected using IGN API.
 
 ### Available Datasets
 
@@ -124,7 +126,7 @@ You can learn more about the architecture in the "model_explained.ipynb" or only
 
 Note that Paris 50K dataset, model and embeddings are trained using satellite images and then need the `--cross` (or `-c`) option in the CLI.
 
-> Every dataset folder indeed needs to have a coordinates.json (detailled below), a folder named "img" where the streetview images are and optionally a "sat" folder where the corresponding satellite images goes.
+> Every dataset folder indeed needs to have a coordinates.json (detailed below), a folder named "img" where the streetview images are and optionally a "sat" folder where the corresponding satellite images goes.
 >
 > The id should be shared across the folders (even if the prefix_ is not the same).
 
@@ -151,6 +153,12 @@ Here are the retrieval results on our validation set (Paris 50K dataset) after 1
 - R@2km : 45.80%
 
 With a median of 2.5km, outlying the ability of the model to anchor itself on distinct images (monuments), but having a hard time to differentiate similar streets. Note that this is only a 13 epochs training.
+
+## 🔮 What next ?
+
+We would like to get the model working on the uniform France dataset, which will need at least satellite views as the problem is a lot harder because of forest and tree.
+
+We don't aim for huge precision, but for precision where it is possible. (Which could lead us to dynamic dataset pruning, removing images that are not recognizable)
 
 ## 📚 References
 
