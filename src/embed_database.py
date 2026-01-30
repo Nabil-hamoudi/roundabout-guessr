@@ -33,9 +33,11 @@ def create_database(imgs, pos, model):
         for img, pos, i_batch in pbar:
             img = img.to(DEVICE)
             #pos = pos.to(DEVICE)
-            with torch.autocast(device_type=DEVICE_STR, dtype=torch.float16):
+            if DEVICE_STR == "cuda":
+                with torch.autocast(device_type=DEVICE_STR, dtype=torch.float16):
+                    vecs = model.image_encoder(img).detach().cpu().numpy()
+            else:
                 vecs = model.image_encoder(img).detach().cpu().numpy()
-
             for idx,vec in zip(i_batch, vecs):
                 i = idx.item()
 
@@ -141,5 +143,5 @@ def init_model(model_path, cross, france):
             r_model = model.MixedEncoder(LAT_MIN=LAT_MIN_F, LAT_MAX=LAT_MAX_F, LON_MIN=LON_MIN_F, LON_MAX=LON_MAX_F).to(DEVICE)
         else: 
             r_model = model.MixedEncoder().to(DEVICE)
-    r_model.load_state_dict(torch.load(model_path))
+    r_model.load_state_dict(torch.load(model_path, map_location=DEVICE))
     return r_model

@@ -105,7 +105,10 @@ def train_cross(nb_epoch=NB_EPOCH, batch_size=BATCH_SIZE, batch_combined=BATCH_C
             img = img.to(DEVICE)
             pos = pos.to(DEVICE)
             sat = sat.to(DEVICE)
-            with torch.autocast(device_type=DEVICE_STR, dtype=torch.float16):
+            if DEVICE_STR == "cuda":
+                with torch.autocast(device_type=DEVICE_STR, dtype=torch.float16):
+                    pred_img, pred_pos, pred_sat, scale = model(img, pos, sat)
+            else:
                 pred_img, pred_pos, pred_sat, scale = model(img, pos, sat)
             accum_pred_img.append(pred_img); accum_pred_pos.append(pred_pos); accum_pred_sat.append(pred_sat); accum_pos_coords.append(pos); accum_scale.append(scale)
             batch_count += 1

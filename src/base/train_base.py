@@ -87,7 +87,10 @@ def train_base(nb_epoch=NB_EPOCH, batch_size=BATCH_SIZE, batch_combined=BATCH_CO
         for img, pos in pbar:
             img = img.to(DEVICE)
             pos = pos.to(DEVICE)
-            with torch.autocast(device_type=DEVICE_STR, dtype=torch.float16):
+            if DEVICE_STR == "cuda":
+                with torch.autocast(device_type=DEVICE_STR, dtype=torch.float16):
+                    pred_img, pred_pos, scale = model(img, pos)
+            else:
                 pred_img, pred_pos, scale = model(img, pos)
             accum_pred_img.append(pred_img); accum_pred_pos.append(pred_pos); accum_pos_coords.append(pos); accum_scale.append(scale)
             batch_count += 1

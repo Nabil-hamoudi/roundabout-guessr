@@ -30,7 +30,10 @@ def model_validation(model, val_loader, distance_thresholds_km=[0.1, 0.25, 1, 2,
                 img = img.to(DEVICE)
                 pos = pos.to(DEVICE)
                 
-                with torch.autocast(device_type=DEVICE_STR, dtype=torch.float16):
+                if DEVICE_STR == "cuda":
+                    with torch.autocast(device_type=DEVICE_STR, dtype=torch.float16):
+                        img_out, pos_out, _ = model(img, pos)
+                else:
                     img_out, pos_out, _ = model(img, pos)
                 all_img_embeds.append(img_out.cpu())
                 all_pos_embeds.append(pos_out.cpu())
@@ -40,8 +43,10 @@ def model_validation(model, val_loader, distance_thresholds_km=[0.1, 0.25, 1, 2,
                 img = img.to(DEVICE)
                 pos = pos.to(DEVICE)
                 sat = sat.to(DEVICE)
-                
-                with torch.autocast(device_type=DEVICE_STR, dtype=torch.float16):
+                if DEVICE_STR == "cuda":
+                    with torch.autocast(device_type=DEVICE_STR, dtype=torch.float16):
+                        img_out, pos_out, sat_out, _ = model(img, pos, sat)
+                else:
                     img_out, pos_out, sat_out, _ = model(img, pos, sat)
                 all_img_embeds.append(img_out.cpu())
                 all_pos_embeds.append(pos_out.cpu())
@@ -106,7 +111,11 @@ def validate_retrieval(model, clean_train_loader, val_loader):
             imgs = imgs.to(DEVICE)
             locs = locs.to(DEVICE)
             sat_imgs = sat_imgs.to(DEVICE)
-            with torch.autocast(device_type=DEVICE_STR, dtype=torch.float16):
+            if DEVICE_STR == "cuda":
+                with torch.autocast(device_type=DEVICE_STR, dtype=torch.float16):
+                    #_, pos_out, _, _ = model(imgs, locs, sat_imgs)
+                    pos_out = model.location_encoder(locs)
+            else:
                 #_, pos_out, _, _ = model(imgs, locs, sat_imgs)
                 pos_out = model.location_encoder(locs)
             
@@ -126,7 +135,10 @@ def validate_retrieval(model, clean_train_loader, val_loader):
     with torch.no_grad():
         for imgs, locs, sat_imgs in tqdm(val_loader):
             imgs = imgs.to(DEVICE)
-            with torch.autocast(device_type=DEVICE_STR, dtype=torch.float16):
+            if DEVICE_STR == "cuda":
+                with torch.autocast(device_type=DEVICE_STR, dtype=torch.float16):
+                    feats, _, _, _ = model(imgs, locs.to(DEVICE), sat_imgs.to(DEVICE))
+            else:
                 feats, _, _, _ = model(imgs, locs.to(DEVICE), sat_imgs.to(DEVICE))
             
             query_feats.append(feats.cpu())
