@@ -6,7 +6,7 @@
 
 **Position Guessr** is a Deep Learning project aiming to retrieve the precise geographical coordinates (latitude, longitude) of a location based on a street-level photograph.
 
-We focus on geolocalisation in the Parisian Region, but France if using an appropriate dataset.
+We focus on geolocalisation in the Parisian Region, but France is supported using an appropriate dataset.
 
 Inspired by the [GeoCLIP](https://arxiv.org/abs/2309.16020) architecture, our model aligns visual features (from streetview images and satellites images) with spatial features (coordinates) using Contrastive Learning.
 
@@ -273,7 +273,7 @@ graph LR
 
 ### Available Datasets
 
-* **France :** 70k images from french randomized around 50 cities. [Download](https://drive.google.com/file/d/1VElOIWDLL83oL-OrIfO-i7G07vkbTfpn/view?usp=sharing)
+* **France :** 70k images, data is randomized but centered around 50 cities. [Download](https://drive.google.com/file/d/1VElOIWDLL83oL-OrIfO-i7G07vkbTfpn/view?usp=sharing)
 * **France :** 300k images randomized across the country. [Download](https://drive.google.com/file/d/1PQ7r9Ijj5XKESN2vsECv_YgFcfE7xzAh/view?usp=sharing)
 * **Paris 50K :** 50K images randomized across the Parisian Region (includes Satellite views). [Download](https://drive.google.com/file/d/1Ht602iXoHgHuJ9hNJh9biDCdQwxGDzPH/view?usp=drive_link)
 * Paris 100K : Using Paris 50K as a base we added 50K more image (also includes Satellite views). [Download](https://drive.google.com/file/d/1_J98Wfn-7yjhDlurKxnA5QkM0dTYcKUS/view?usp=sharing)
@@ -297,6 +297,8 @@ Note that Paris 50K/100K datasets, models and embeddings are trained/generated u
 ## 🤖 Models
 
 Paris 50K model we stopped early : [Download](https://drive.google.com/file/d/1tcvvOx-qeKgNDOw9BItXGN3eOlYzIB1_/view?usp=sharing)
+
+Paris 100K model : [Download](https://drive.google.com/file/d/1UjKgMk25QQ4ZrZUajCCcrtnj9NNXNq3v/view?usp=sharing)
 
 ## 📊 Results
 
