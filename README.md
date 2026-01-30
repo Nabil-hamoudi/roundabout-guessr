@@ -267,7 +267,7 @@ graph LR
 
 ## 💾 Datasets
 
-> Our data is scraped from Google Street View. Each dataset must contain a `coordinates.json` file and an image folder. We pick random coordinates in certain places and use the library *streetlevel* to get the Google Panorama ID and image.
+> Our data is scraped from Google Street View. Each dataset must contain a `coordinates.json` file and an image folder. We pick random coordinates in certain places and use the library *streetlevel* to get the Google Panorama ID and image.  
 > Satellite images are collected using IGN API.
 
 ### Available Datasets
@@ -278,9 +278,10 @@ graph LR
 * **Paris 100K :** Using Paris 50K as a base we added 50K more image (also includes Satellite views). [Download](https://drive.google.com/file/d/1_J98Wfn-7yjhDlurKxnA5QkM0dTYcKUS/view?usp=sharing)
 * **Paris 1K :** 1K image of the Parisian Region, can be used as a test set for benchmarking or as quick way to test training. It has been sampled independently from other datasets. [Download](https://drive.google.com/file/d/1ulp6vD-rpDRm-rYo6CirefnI23k5ZImk/view?usp=sharing)
 
-Note that Paris 50K/100K datasets, models and embeddings are trained/generated using satellite images and then need the `--cross` (or `-c`) option in the CLI.And that the France datasets needs the `--france` (or `-f`) option in the CLI.
+Note that Paris 50K/100K datasets, models and embeddings are trained/generated using satellite images and then need the `--cross` (or `-c`) option in the CLI.  
+And that the France datasets needs the `--france` (or `-f`) option in the CLI.
 
-> Every dataset folder indeed needs to have a coordinates.json (detailed below), a folder named "img" where the streetview images are and optionally a "sat" folder where the corresponding satellite images goes.
+> Every dataset folder indeed needs to have a coordinates.json (detailed below), a folder named "img" where the streetview images are and optionally a "sat" folder where the corresponding satellite images goes.  
 > The id should be shared across the folders (even if the prefix_ is not the same).
 
 ```js
