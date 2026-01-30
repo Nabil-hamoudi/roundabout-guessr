@@ -26,6 +26,13 @@ HELPCARTEOUTPUT = "Chemin vers le fichier de sortie de la carte en html"
 HELPNUMBERPOINTS = "Nombre de points à afficher sur la carte des erreurs"
 HELPBENCHMARK = "Lance le benchmark sur un modèle, une base d'embeddings donnée, ses coordonnées et un test set (Paris datasets only !)"
 
+def check_paths_exist(*paths: Path) -> bool:
+    for p in paths:
+        if not p.exists():
+            print(f"Erreur : Le fichier ou dossier '{p}' n'existe pas.")
+            return False
+    return True
+
 def main():
     parser = argparse.ArgumentParser(
         description="CLI pour ensemble des applications"
@@ -219,6 +226,15 @@ def main():
         help=HELPDATASET
     )
 
+    benchmark_parser.add_argument(
+        '-c',
+        '--cross',
+        action='store_true',
+        default=False,
+        dest="cross",
+        help=HELPCROSS
+    )
+
 ####################################################################################
 
     args = parser.parse_args()
@@ -230,12 +246,7 @@ def main():
         images_path = Path(args.dataset_folder).joinpath("img")
         sat_path = Path(args.dataset_folder).joinpath("sat")
 
-        if not images_path.exists():
-            print(f"Erreur : Le dossier {images_path} n'existe pas.")
-            return
-
-        if not json_path.exists():
-            print(f"Erreur : Le fichier {json_path} n'existe pas.")
+        if not check_paths_exist(json_path, images_path):
             return
 
         print(f"Dataset : {Path(args.dataset_folder)}")
@@ -248,8 +259,7 @@ def main():
 
         # Lancer l'entraînement
         if args.cross:
-                if not sat_path.exists():
-                    print(f"Erreur : Le dossier {sat_path} n'existe pas.")
+                if not check_paths_exist(sat_path):
                     return
                 from src.cross_view import train_cross
                 train_cross.train_cross(
@@ -276,17 +286,10 @@ def main():
         json_path = Path(args.dataset_folder).joinpath("coordinates.json")
         images_path = Path(args.dataset_folder).joinpath("img")
         model_path = Path(args.model_path)
-        if not images_path.exists():
-            print(f"Erreur : Le dossier {images_path} n'existe pas.")
+
+        if not check_paths_exist(json_path, images_path, model_path):
             return
 
-        if not json_path.exists():
-            print(f"Erreur : Le fichier {json_path} n'existe pas.")
-            return
-
-        if not model_path.exists():
-            print(f"Erreur : Le fichier {model_path} n'existe pas.")
-            return
         from src.embed_database import init_model, create_embeddings
 
         create_embeddings(
@@ -303,17 +306,8 @@ def main():
         model_path = Path(args.model_path)
         image = Path(args.image_path)
         coordinates = Path(args.coordinates_path)
-    
-        if not image.exists():
-            print(f"Erreur : Le fichier {image} n'existe pas.")
-            return
 
-        if not embed.exists():
-            print(f"Erreur : Le fichier {embed} n'existe pas.")
-            return
-
-        if not model_path.exists():
-            print(f"Erreur : Le fichier {model_path} n'existe pas.")
+        if not check_paths_exist(embed, model_path, image, coordinates):
             return
         from src.embed_database import init_model, get_closest_locations
 
@@ -336,24 +330,8 @@ def main():
         images_path = Path(args.dataset_folder).joinpath("img")
         model_path = Path(args.model_path)
         carte_output = Path(args.carte_output)
-        if not images_path.exists():
-            print(f"Erreur : Le dossier {images_path} n'existe pas.")
-            return
 
-        if not json_path.exists():
-            print(f"Erreur : Le fichier {json_path} n'existe pas.")
-            return
-
-        if not embed.exists():
-            print(f"Erreur : Le fichier {embed} n'existe pas.")
-            return
-
-        if not model_path.exists():
-            print(f"Erreur : Le fichier {model_path} n'existe pas.")
-            return
-        
-        if not model_path.exists():
-            print(f"Erreur : Le fichier {model_path} n'existe pas.")
+        if not check_paths_exist(embed, json_path, images_path, model_path, carte_output):
             return
 
         print(f"Dataset : {Path(args.dataset_folder)}")
@@ -379,22 +357,10 @@ def main():
         embeds_coords_path = Path(args.embeds_coords_path)
         coordinates_path = Path(args.coordinates_path)
         testset_folder = Path(args.testset_folder)
+
+        if not check_paths_exist(model_path, embeds_coords_path, coordinates_path, testset_folder):
+            return
         
-        if not model_path.exists():
-            print(f"Erreur : Le fichier {model_path} n'existe pas.")
-            return
-
-        if not embeds_coords_path.exists():
-            print(f"Erreur : Le fichier {embeds_coords_path} n'existe pas.")
-            return
-
-        if not coordinates_path.exists():
-            print(f"Erreur : Le fichier {coordinates_path} n'existe pas.")
-            return
-
-        if not testset_folder.exists():
-            print(f"Erreur : Le dossier {testset_folder} n'existe pas.")
-            return
 
         from src.benchmark import run_benchmark
 
