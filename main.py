@@ -1,8 +1,6 @@
 import argparse
 from pathlib import Path
 
-
-
 DESCRIPTIONCLI = "CLI pour ensemble des applications"
 HELPSUBPARSER = 'Entrainement et lancement du modele'
 HELPTRAIN = "Entraîner le modèle"
@@ -155,54 +153,8 @@ def main():
         help=HELPFR)
 ####################################################################################
 ####################################################################################
-
-    spider_view = subparsers.add_parser("spider_view", help=HELPUSEMODEL)
-
-    # Arguments positionnels (obligatoires)
-
-    spider_view.add_argument(
-        "number_points",
-        type=int,
-        help=HELPNUMBERPOINTS
-    )
-
-    spider_view.add_argument(
-        "model_path",
-        type=str,
-        help=HELPMODEL
-    )
-
-    spider_view.add_argument(
-        "embed_path",
-        type=str,
-        help=HELPEMBEDING
-    )
-    spider_view.add_argument(
-        "dataset_folder",
-        type=str,
-        help=HELPDATASET
-    )
-    spider_view.add_argument(
-        "carte_output",
-        type=str,
-        help=HELPCARTEOUTPUT
-    )
-    spider_view.add_argument(
-        '-c',
-        '--cross',
-        action='store_true',
-        default=False,
-        dest="cross",
-        help=HELPCROSS
-    )
-    spider_view.add_argument(
-        '-fr',
-        '--france',
-        action='store_true',
-        default=False,
-        help=HELPFR)
-    ####################################################################################
-    ####################################################################################
+####################################################################################
+####################################################################################
     benchmark_parser = subparsers.add_parser("benchmark", help=HELPBENCHMARK)
     # Arguments positionnels (obligatoires)
     benchmark_parser.add_argument(
@@ -321,55 +273,6 @@ def main():
             str(embed.resolve()),
             str(image.resolve()),
             str(coordinates.resolve())
-        )
-
-
-    elif args.subcommand == "spider_view":
-        embed = Path(args.embed_path)
-        json_path = Path(args.dataset_folder).joinpath("coordinates.json")
-        images_path = Path(args.dataset_folder).joinpath("img")
-        model_path = Path(args.model_path)
-        carte_output = Path(args.carte_output)
-
-        if not check_paths_exist(embed, json_path, images_path, model_path):
-            return
-
-        print(f"Dataset : {Path(args.dataset_folder)}")
-        print(f"Json file : {str(json_path.resolve())}")
-        print(f"Number of points : {args.number_points}")
-        print(f"Carte output : {carte_output}")
-        print(f"Embeddings : {embed}")
-        print(f"Model : {model_path}")
-
-        from src.embed_database import init_model
-        from src.visu_spider import run_spider_map
-
-        run_spider_map(
-            init_model(str(model_path.resolve()), args.cross, args.france),
-            max_points=args.number_points,
-            output_file=str(carte_output.resolve()),
-            data_dir=str(images_path.resolve()),
-            json_path=str(json_path.resolve()),
-            embed_path=str(embed.resolve())
-        )
-    elif args.subcommand == "benchmark":
-        model_path = Path(args.model_path)
-        embeds_coords_path = Path(args.embeds_coords_path)
-        coordinates_path = Path(args.coordinates_path)
-        testset_folder = Path(args.testset_folder)
-
-        if not check_paths_exist(model_path, embeds_coords_path, coordinates_path, testset_folder):
-            return
-        
-
-        from src.benchmark import run_benchmark
-
-        run_benchmark(
-            str(coordinates_path.resolve()),
-            str(embeds_coords_path.resolve()),
-            str(testset_folder.resolve()),
-            str(model_path.resolve()),
-            args.cross
         )
 
 
