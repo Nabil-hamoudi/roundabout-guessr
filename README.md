@@ -10,6 +10,10 @@ We focus on geolocalisation in the Parisian Region, but France is supported usin
 
 Inspired by the [GeoCLIP](https://arxiv.org/abs/2309.16020) architecture, our model aligns visual features (from streetview images and satellites images) with spatial features (coordinates) using Contrastive Learning.
 
+## For an even quicker start :
+
+Use our [google colab demo](https://colab.research.google.com/drive/1z9V7xi33NAnsBgNWSKV_DYNNnzjHAKVb?usp=sharing) ! It has a dataset downloaded, a trained model, generated embeddings. Life is good !
+
 ## ⚙️ Installation
 
 ### Requirements
@@ -24,7 +28,7 @@ Inspired by the [GeoCLIP](https://arxiv.org/abs/2309.16020) architecture, our mo
 
 #### Scraping dependencies
 
-> streetlevel
+> streetlevel py360convert
 
 ### Quick Start
 
@@ -33,7 +37,7 @@ Please adapt the "python" prefix with yours.
 Clone the repository and install the dependencies :
 
 ```sh
-python -m pip install tqdm torchvision numpy matplotlib opencv-python albumentations random-fourier-features-pytorch geopy gdown folium
+python -m pip install tqdm torchvision numpy matplotlib opencv-python albumentations random-fourier-features-pytorch geopy gdown
 ```
 
 Benchmark a model :
@@ -55,15 +59,11 @@ python download_data.py download --type dataset paris_1k
 python .\main.py train 10 32 ./datasets/paris_1k
 ```
 
-## For an even quicker start :
-
-Use our [google colab demo](https://colab.research.google.com/drive/1z9V7xi33NAnsBgNWSKV_DYNNnzjHAKVb?usp=sharing) ! It has a dataset downloaded, a trained model, generated embeddings. Life is good !
-
 ## 🚀 Usage
 
 The project is designed to be run through CLI, here it is `main.py`.
 
-Across the CLI the `--cross` (or `-c`) option is to use the cross-view model, note that you then need a dataset with satellies views. The `--france` (or `-f`) option is to tell the model that you are in a national context and not focused on Paris.
+Across the CLI the `--cross` (or `-c`) option is to use the cross-view model, note that you then need a dataset with satellite views. The `--france` (or `-f`) option is to tell the model that you are in a national context and not focused on Paris.
 
 #### 0. Downloading data
 
@@ -267,20 +267,20 @@ graph LR
 
 ## 💾 Datasets
 
-> Our data is scraped from Google Street View. Each dataset must contain a `coordinates.json` file and an image folder. We pick random coordinates in certain places and use the library *streetlevel* to get the Google Panorama ID and image.  
+> Our data is scraped from Google Street View. Each dataset must contain a `coordinates.json` file and an image folder. We pick random coordinates in certain places and use the library *streetlevel* to get the Google Panorama ID and image.
 > Satellite images are collected using IGN API.
 
 ### Available Datasets
 
-* **France :** 50k images, data is randomized but centered around 50 cities. [Download](https://drive.google.com/file/d/1VElOIWDLL83oL-OrIfO-i7G07vkbTfpn/view?usp=sharing)
-* **France :** 300k images randomized across the country. [Download](https://drive.google.com/file/d/1PQ7r9Ijj5XKESN2vsECv_YgFcfE7xzAh/view?usp=sharing)
+* **France 50K :** 50k images, data is randomized but centered around 50 cities. [Download](https://drive.google.com/file/d/1VElOIWDLL83oL-OrIfO-i7G07vkbTfpn/view?usp=sharing)
+* **France 300K :** 300k images randomized across the country. [Download](https://drive.google.com/file/d/1PQ7r9Ijj5XKESN2vsECv_YgFcfE7xzAh/view?usp=sharing)
 * **Paris 50K :** 50K images randomized across the Parisian Region (includes Satellite views). [Download](https://drive.google.com/file/d/1Ht602iXoHgHuJ9hNJh9biDCdQwxGDzPH/view?usp=drive_link)
 * **Paris 100K :** Using Paris 50K as a base we added 50K more image (also includes Satellite views). [Download](https://drive.google.com/file/d/1_J98Wfn-7yjhDlurKxnA5QkM0dTYcKUS/view?usp=sharing)
-* **Paris 1K :** 1K image of the Parisian Region, can be used as a test set for benchmarking or as quick way to test training. [Download](https://drive.google.com/file/d/1ulp6vD-rpDRm-rYo6CirefnI23k5ZImk/view?usp=sharing)
+* **Paris 1K :** 1K image of the Parisian Region, can be used as a test set for benchmarking or as quick way to test training. It has been sampled independently from other datasets. [Download](https://drive.google.com/file/d/1ulp6vD-rpDRm-rYo6CirefnI23k5ZImk/view?usp=sharing)
 
-Note that Paris 50K/100K datasets, models and embeddings are trained/generated using satellite images and then need the `--cross` (or `-c`) option in the CLI.  
-And that the France datasets needs the `--france` (or `-f`) option in the CLI. 
-> Every dataset folder indeed needs to have a coordinates.json (detailed below), a folder named "img" where the streetview images are and optionally a "sat" folder where the corresponding satellite images goes.  
+Note that Paris 50K/100K datasets, models and embeddings are trained/generated using satellite images and then need the `--cross` (or `-c`) option in the CLI.And that the France datasets needs the `--france` (or `-f`) option in the CLI.
+
+> Every dataset folder indeed needs to have a coordinates.json (detailed below), a folder named "img" where the streetview images are and optionally a "sat" folder where the corresponding satellite images goes.
 > The id should be shared across the folders (even if the prefix_ is not the same).
 
 ```js
@@ -300,43 +300,43 @@ Paris 100K model : [Download](https://drive.google.com/file/d/1UjKgMk25QQ4ZrZUaj
 
 ## 📊 Results
 
-We trained the Cross View model on Paris 100K and on Paris 50K. \
+We trained the Cross View model on Paris 100K and on Paris 50K.
 Both models were stopped early due to time constraints (as full training takes us 20 hours), but gives a rough estimate on how a fully trained model could work.
 
-For the Paris 100K model, we get the following training curve : \
+For the Paris 100K model, we get the following training curve :
 <img src="https://cdn.discordapp.com/attachments/1375418665939243131/1466898328745676984/test_2.png?ex=697e6b07&is=697d1987&hm=489411baadd0dac5c01a6eea0660164dd318350f5e251a346ba8135867ba335f&" alt="drawing" width = "500"/>
 
-For training the kNN is done between position embeds and image embeds only between the elements within the validation set. \
+
+For training the kNN is done between position embeds and image embeds only between the elements within the validation set.
 The Recall strategy takes the point with the best similarity.
 
 A benchmark run with the same Recall strategy using Paris_1k as the test set gives :
 
->**Mean Error**        : 3045.69 m \
->**Median Error**      : 141.47 m
+> **Mean Error**        : 3045.69 m
+> **Median Error**      : 141.47 m
 >
->**Precision @ 10km**  : 87.50% \
->**Precision @ 2km**  : 66.50% \
->**Precision @ 1km**  : 61.40% \
->**Precision @ 500m**  : 57.90% \
->**Precision @ 200m**  : 52.20% \
->**Precision @ 100m**  : 47.20% \
->**Precision @ 25m**  : 30.40% 
+> **Precision @ 10km**  : 87.50%
+> **Precision @ 2km**  : 66.50%
+> **Precision @ 1km**  : 61.40%
+> **Precision @ 500m**  : 57.90%
+> **Precision @ 200m**  : 52.20%
+> **Precision @ 100m**  : 47.20%
+> **Precision @ 25m**  : 30.40%
 
-The difference between the Mean Error and the Median Error can be interpreted as the confusion of the model : when he knows he can pinpoint the location, but when he don't he can't pinpoint a good heuristic. \
-This argument can be taken further by using the same benchmark run but using a Recall strategy where we take the closest point within the 5 closest (which is not usable in a real use case) :
+The difference between the Mean Error and the Median Error can be interpreted as the confusion of the model : when he knows he can pinpoint the location, but when he don't he can't pinpoint a good heuristic. This argument can be taken further by using the same benchmark run but using a Recall strategy where we take the closest point within the 5 closest (which is not usable in a real use case) :
 
->**Mean Error**    : 990.55 m \
->**Median Error**  : 50.72 m
+> **Mean Error**    : 990.55 m
+> **Median Error**  : 50.72 m
 >
->**Precision @ 10km**  : 98.40% \
->**Precision @ 2km**  : 85.60% \
->**Precision @ 1km**  : 77.80% \
->**Precision @ 500m**  : 72.20% \
->**Precision @ 200m**  : 65.30% \
->**Precision @ 100m**  : 59.00% \
->**Precision @ 25m**  : 35.60%
+> **Precision @ 10km**  : 98.40%
+> **Precision @ 2km**  : 85.60%
+> **Precision @ 1km**  : 77.80%
+> **Precision @ 500m**  : 72.20%
+> **Precision @ 200m**  : 65.30%
+> **Precision @ 100m**  : 59.00%
+> **Precision @ 25m**  : 35.60%
 
-Mean Error is a lot closer to what one can expect, and the model Recall curve is a lot smoother. \
+Mean Error is a lot closer to what one can expect, and the model Recall curve is a lot smoother.
 This actually gives a motivation to create heuristics about what point one should take from the kNN, as it may boost stability at a minimal performance cost.
 
 ## 🔮 What is next ?
