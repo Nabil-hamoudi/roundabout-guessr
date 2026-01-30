@@ -45,7 +45,7 @@ python download_data.py download --type embeddings paris_50k
 python download_data.py download --type coordinates paris_50k
 
 #Finally
-python main.py benchmark .\model_paris_50k.pt .\coordinates_paris_50k.json .\embeddings_paris_50k.pt. .\datasets\paris_1k --cross
+python main.py benchmark ./model_paris_50k.pt ./coordinates_paris_50k.json ./embeddings_paris_50k.pt ./datasets/paris_1k --cross
 ```
 
 Train a model :
@@ -276,8 +276,8 @@ graph LR
 * **France :** 70k images, data is randomized but centered around 50 cities. [Download](https://drive.google.com/file/d/1VElOIWDLL83oL-OrIfO-i7G07vkbTfpn/view?usp=sharing)
 * **France :** 300k images randomized across the country. [Download](https://drive.google.com/file/d/1PQ7r9Ijj5XKESN2vsECv_YgFcfE7xzAh/view?usp=sharing)
 * **Paris 50K :** 50K images randomized across the Parisian Region (includes Satellite views). [Download](https://drive.google.com/file/d/1Ht602iXoHgHuJ9hNJh9biDCdQwxGDzPH/view?usp=drive_link)
-* Paris 100K : Using Paris 50K as a base we added 50K more image (also includes Satellite views). [Download](https://drive.google.com/file/d/1_J98Wfn-7yjhDlurKxnA5QkM0dTYcKUS/view?usp=sharing)
-* Paris 1K : 1K image of the Parisian Region, can be used as a test set for benchmarking or as quick way to test training. [Download](https://drive.google.com/file/d/1ulp6vD-rpDRm-rYo6CirefnI23k5ZImk/view?usp=sharing)
+* **Paris 100K :** Using Paris 50K as a base we added 50K more image (also includes Satellite views). [Download](https://drive.google.com/file/d/1_J98Wfn-7yjhDlurKxnA5QkM0dTYcKUS/view?usp=sharing)
+* **Paris 1K :** 1K image of the Parisian Region, can be used as a test set for benchmarking or as quick way to test training. [Download](https://drive.google.com/file/d/1ulp6vD-rpDRm-rYo6CirefnI23k5ZImk/view?usp=sharing)
 
 Note that Paris 50K/100K datasets, models and embeddings are trained/generated using satellite images and then need the `--cross` (or `-c`) option in the CLI.
 
@@ -302,20 +302,50 @@ Paris 100K model : [Download](https://drive.google.com/file/d/1UjKgMk25QQ4ZrZUaj
 
 ## 📊 Results
 
-Here are the retrieval results on our validation set (Paris 50K dataset) after 13 epochs:
+We trained the Cross View model on Paris 100K and on Paris 50K. \
+Both models were stopped early due to time constraints (as full training takes us 20 hours), but gives a rough estimate on how a fully trained model could work.
 
-- R@100m : 20%
-- R@250m : 23.77%
-- R@1km : 36.27%
-- R@2km : 45.80%
+For the Paris 100K model, we get the following training curve : \
+<img src="https://cdn.discordapp.com/attachments/1375418665939243131/1466898328745676984/test_2.png?ex=697e6b07&is=697d1987&hm=489411baadd0dac5c01a6eea0660164dd318350f5e251a346ba8135867ba335f&" alt="drawing" width = "500"/>
 
-With a median of 2.5km, outlying the ability of the model to anchor itself on distinct images (monuments), but having a hard time to differentiate similar streets. Note that this is only a 13 epochs training.
+For training the kNN is done between position embeds and image embeds only between the elements within the validation set. \
+The Recall strategy takes the point with the best similarity.
 
-## 🔮 What next ?
+A benchmark run with the same Recall strategy using Paris_1k as the test set gives :
+
+Mean Error        : 3045.69 m \
+Median Error      : 141.47 m
+
+Precision @ 10km  : 87.50% \
+Precision @ 2km   : 66.50% \
+Precision @ 1km   : 61.40% \
+Precision @ 500m  : 57.90% \
+Precision @ 200m  : 52.20% \
+Precision @ 100m  : 47.20% \
+Precision @ 25m   : 30.40% 
+
+The difference between the Mean Error and the Median Error can be interpreted as the confusion of the model : when he knows he can pinpoint the location, but when he don't he can't pinpoint a good heuristic. \
+This argument can be taken further by using the same benchmark run but using a Recall strategy where we take the closest point within the 5 closest (which is not usable in a real use case) :
+
+Mean Error    : 990.55 m \
+Median Error  : 50.72 m
+
+Precision @ 10km  : 98.40% \
+Precision @ 2km   : 85.60% \
+Precision @ 1km   : 77.80% \
+Precision @ 500m  : 72.20% \
+Precision @ 200m  : 65.30% \
+Precision @ 100m  : 59.00% \
+Precision @ 25m   : 35.60%
+
+Mean Error is a lot closer to what one can expect, and the model Recall curve is a lot smoother. \
+This actually gives a motivation to create heuristics about what point one should take from the kNN, as it may boost stability at a minimal performance cost.
+
+## 🔮 What is next ?
 
 We would like to get the model working on the uniform France dataset, which will need at least satellite views as the problem is a lot harder because of forest and tree.
 
-We don't aim for huge precision, but for precision where it is possible. (Which could lead us to dynamic dataset pruning, removing images that are not recognizable)
+We would also like to take time to fully train the models and to push Recall strategies further.
 
 ## 📚 References
 
