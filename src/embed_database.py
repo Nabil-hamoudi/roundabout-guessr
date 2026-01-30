@@ -26,14 +26,15 @@ def create_database(imgs, pos, model):
     elems = []
 
     dataset = ImagesPosDataset(imgs, pos, want_index=True)
-    loader = DataLoader(dataset, batch_size=64)
+    loader = DataLoader(dataset, batch_size=32)
 
     pbar = tqdm(loader, desc=f"Calcul des embeds", unit="batch", leave=False)
     with torch.no_grad():
-        for _, pos, i_batch in pbar:
-            pos = pos.to(DEVICE)
+        for img, pos, i_batch in pbar:
+            img = img.to(DEVICE)
+            #pos = pos.to(DEVICE)
             with torch.autocast(device_type=DEVICE_STR, dtype=torch.float16):
-                vecs = model.location_encoder(pos).detach().cpu().numpy()
+                vecs = model.image_encoder(img).detach().cpu().numpy()
 
             for idx,vec in zip(i_batch, vecs):
                 i = idx.item()
