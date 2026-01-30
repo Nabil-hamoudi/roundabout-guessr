@@ -44,7 +44,7 @@ Across the CLI the `--cross` (or `-c`) option is to use the cross-view model, no
 
 #### 1. Training
 
-To train the model on a specific dataset. Use `batch_combined` (or `bc`) to simulate large batches on limited VRAM. Note that it still use heavy amount on VRAM and that 12 to 16Gb are recommanded to train the model.
+To train the model on a specific dataset. Use `batch_combined` (or `bc`) to simulate large batches on limited VRAM. Note that it still use heavy amount on VRAM and that 12 to 16Gb are recommended to train the model.
 
 ```
 python main.py train [-bc BATCH_ACCUMULATION] <epochs> <batch_size> <dataset_path>
@@ -105,12 +105,126 @@ Position Guessr
 Our approach relies on **Deep Metric Learning**:
 
 1. **Image Encoder:** We use **DINOv2 (Small)** frozen weights with trainable adapters to extract semantic features from streetview images and satellite images.
-2. **Location Encoder:** We use **Random Fourier Features (RFF)** to map 2D GPS coordinates into a high-dimensional space. This structures the encoder as a **Neural Feature Field**, enabling the model to learn high-frequency spatial details rather than smooth global trends.
+2. **Location Encoder:** We use **Random Fourier Features (RFF)** to map 2D GPS coordinates into a high-dimensional space. The encoder is then used as a **Neural Feature Field**, enabling the model to learn high-frequency spatial details rather than smooth global trends.
 3. **Loss Function:** We utilize a **Masked InfoNCE Loss**.
    * It maximizes similarity between an image and its location.
    * It treats physically close locations (e.g., < 10m) as valid positives (masking) to avoid false negatives during contrastive learning.
 
-You can learn more about the architecture in the "model_explained.ipynb" or online [here](https://colab.research.google.com/drive/1VPylq210Usa3KIG8PUrhk0AHZs1yfn7l?usp=sharing) !
+You can learn more about the architecture in "model_explained.ipynb" or online [here](https://colab.research.google.com/drive/1VPylq210Usa3KIG8PUrhk0AHZs1yfn7l?usp=sharing) !
+
+Here are the main two main diagrams :
+
+```mermaid
+graph LR
+    %%{init: {'theme': 'base', 'themeVariables': { 'fontSize': '11px', 'fontFamily': 'arial'}, 'flowchart': {'rankSpacing': 15, 'nodeSpacing': 15}}}%%
+  
+    %% STYLES
+    classDef input fill:#f9f,stroke:#333,stroke-width:1px,font-weight:bold;
+    classDef frozen fill:#eee,stroke:#999,stroke-dasharray: 5 5,color:#666;
+    classDef train fill:#d4e1f5,stroke:#2b4a75,color:#000;
+    classDef out fill:#ffcc00,stroke:#b38f00,font-weight:bold;
+
+    %% NODES
+    IMG[("🖼️Image")]:::input
+  
+    subgraph Backbone [Frozen Backbone]
+        DINO["DINOv2 (ViT-S)"]:::frozen
+    end
+  
+    subgraph Heads [Adapters]
+        direction TB
+        subgraph P1 [Patch Tokens]
+            PT[Patch Toks] --> AD1[Adapter] --> GEM[GeM Pool]
+        end
+        subgraph P2 [CLS Token]
+            CT[CLS Tok] --> AD2[Adapter]
+        end
+    end
+  
+    CONCAT[Concat]:::train
+    PROJ["Projection (512)"]:::train
+    EMB{{Embed}}:::out
+
+    %% FLOW
+    IMG --> DINO
+    DINO --> PT & CT
+    GEM & AD2 --> CONCAT
+    CONCAT --> PROJ --> EMB
+```
+
+```mermaid
+graph LR
+    %%{init: {'theme': 'base', 'themeVariables': { 'fontSize': '11px', 'fontFamily': 'arial'}, 'flowchart': {'rankSpacing': 20, 'nodeSpacing': 20}}}%%
+  
+    classDef input fill:#f9f,stroke:#333,stroke-width:1px,font-weight:bold;
+    classDef frozen fill:#eee,stroke:#999,stroke-dasharray: 5 5,color:#666;
+    classDef train fill:#d4e1f5,stroke:#2b4a75,color:#000;
+    classDef out fill:#ffcc00,stroke:#b38f00,font-weight:bold;
+
+    LOC[("📍 Lat, Lon")]:::input
+  
+    subgraph Preproc [Feature Expansion]
+        NORM["Norm [-1,1]"]:::train
+        RFF["Fourier Feat.<br>"]:::frozen
+    end
+  
+    subgraph MLP ['Zooming' MLP]
+        L1[ResBlock]:::train
+        L2[ResBlock]:::train
+        L3[...]:::train
+        L4[ResBlock]:::train
+    end
+  
+    PROJ["Projection (512)"]:::train
+    EMB{{Embed}}:::out
+
+    LOC --> NORM --> RFF --> L1 --> L2 --> L3 --> L4 --> PROJ --> EMB
+```
+
+The learning can be summarized as :
+
+```mermaid
+graph LR
+    %%{init: {'theme': 'base', 'themeVariables': { 'fontSize': '11px', 'fontFamily': 'arial'}}}%%
+  
+    classDef input fill:#fff,stroke:#333,stroke-dasharray: 5 5;
+    classDef enc fill:#e1f5fe,stroke:#0277bd,stroke-width:2px;
+    classDef vec fill:#ffcc00,stroke:#b38f00,stroke-width:2px,rx:5,ry:5;
+    classDef loss fill:#ffcdd2,stroke:#c62828,stroke-width:2px,color:#c62828;
+
+    subgraph Batch [Batch Input]
+        I[Image Batch]:::input
+        S[Sat Batch]:::input
+        L[Loc Batch]:::input
+    end
+
+    subgraph Models [Triple Encoders]
+        E_IMG[Image Encoder]:::enc
+        E_SAT[Image Encoder]:::enc
+        E_LOC[Location Encoder]:::enc
+    end
+
+    subgraph Latent [Latent Space]
+        V_I{{Embed Image}}:::vec
+        V_S{{EmbedSat}}:::vec
+        V_L{{EmbedLoc}}:::vec
+    end
+
+    LOSS((Masked<br>InfoNCE)):::loss
+
+    %% FLOW
+    I --> E_IMG --> V_I
+    S --> E_SAT --> V_S
+    L --> E_LOC --> V_L
+
+    %% CONTRAST
+    V_I <==>|Similarity| V_L
+    V_S <==>|Similarity| V_L
+    V_S <==>|Similarity| V_I
+  
+    V_I & V_S & V_L -.-> LOSS
+```
+
 
 ## 💾 Datasets
 
@@ -130,7 +244,7 @@ Note that Paris 50K dataset, model and embeddings are trained using satellite im
 >
 > The id should be shared across the folders (even if the prefix_ is not the same).
 
-```json
+```js
  "img_id :"{
     "longitude": float, // Longitude in EPSG:4326 system
     "latitude": float, // Latitude in EPSG:4326 system

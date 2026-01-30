@@ -230,7 +230,7 @@ def main():
                 want_france=(args.france == True)
             )
         else:
-            from base import train_base
+            from src.base import train_base
             train_base.train_base(
                 nb_epoch=args.nb_epoch,
                 batch_size=args.batch_size,
@@ -264,7 +264,7 @@ def main():
             else:
                 r_model = model_cross.CrossEncoder().to(embed_database.DEVICE)
         else:
-            from base import model
+            from src.base import model
             if args.france:
                 r_model = model.MixedEncoder(LAT_MIN=LAT_MIN_F, LAT_MAX=LAT_MAX_F, LON_MIN=LON_MIN_F, LON_MAX=LON_MAX_F).to(embed_database.DEVICE)
             else:
@@ -312,7 +312,7 @@ def main():
             else:
                 r_model = model_cross.CrossEncoder().to(embed_database.DEVICE)
         else:
-            from base import model
+            from src.base import model
             if args.france:
                 r_model = model.MixedEncoder(LAT_MIN=LAT_MIN_F, LAT_MAX=LAT_MAX_F, LON_MIN=LON_MIN_F, LON_MAX=LON_MAX_F).to(embed_database.DEVICE)
             else: 
