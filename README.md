@@ -145,7 +145,7 @@ Position Guessr
 Our approach relies on **Deep Metric Learning**:
 
 1. **Image Encoder:** We use **DINOv2 (Small)** frozen weights with trainable adapters to extract semantic features from streetview images and satellite images.
-2. **Location Encoder:** We use **Random Fourier Features (RFF)** to map 2D GPS coordinates into a high-dimensional space. The encoder is then used as a **Neural Field**, enabling the model to learn high-frequency spatial details rather than smooth global trends.
+2. **Location Encoder:** We use **Random Fourier Features (RFF)** to map 2D GPS coordinates into a high-dimensional space. The encoder is then used as a **Neural Feature Field**, enabling the model to learn high-frequency spatial details rather than smooth global trends.
 3. **Loss Function:** We utilize a **Masked InfoNCE Loss**.
    * It maximizes similarity between an image and its location.
    * It treats physically close locations (e.g., < ~10m) as valid positives (masking) to avoid false negatives during contrastive learning.
