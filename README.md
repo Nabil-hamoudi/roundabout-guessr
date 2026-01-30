@@ -32,7 +32,7 @@ Clone the repository and install the dependencies :
 py -m pip install tqdm torchvision numpy matplotlib opencv-python albumentations random-fourier-features-pytorch geopy gdown folium
 ```
 
-### For an even quicker start :
+## For an even quicker start :
 
 Use our [demo](https://colab.research.google.com/drive/1z9V7xi33NAnsBgNWSKV_DYNNnzjHAKVb?usp=sharing) ! It has a dataset downloaded, a trained model, generated embeddings. Life is good !
 
