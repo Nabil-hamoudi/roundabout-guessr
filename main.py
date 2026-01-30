@@ -331,7 +331,7 @@ def main():
         model_path = Path(args.model_path)
         carte_output = Path(args.carte_output)
 
-        if not check_paths_exist(embed, json_path, images_path, model_path, carte_output):
+        if not check_paths_exist(embed, json_path, images_path, model_path):
             return
 
         print(f"Dataset : {Path(args.dataset_folder)}")
