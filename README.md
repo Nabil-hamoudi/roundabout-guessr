@@ -110,7 +110,7 @@ Our approach relies on **Deep Metric Learning**:
    * It maximizes similarity between an image and its location.
    * It treats physically close locations (e.g., < 10m) as valid positives (masking) to avoid false negatives during contrastive learning.
 
-You can learn more about the architecture
+You can learn more about the architecture in the "model_explained.ipynb" or only [here](https://colab.research.google.com/drive/1VPylq210Usa3KIG8PUrhk0AHZs1yfn7l?usp=sharing) !
 
 ## 💾 Datasets
 
