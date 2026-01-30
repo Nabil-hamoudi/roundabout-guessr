@@ -1,8 +1,6 @@
 import argparse
-import sys
 from pathlib import Path
 
-import torch
 
 
 DESCRIPTIONCLI = "CLI pour ensemble des applications"
@@ -26,6 +24,7 @@ HELPFR = "Utiliser les coordonnées de la France pour normaliser"
 HELPSPIDER = "Génére la carte des erreurs pour un modele entrainer et un dataset donné"
 HELPCARTEOUTPUT = "Chemin vers le fichier de sortie de la carte en html"
 HELPNUMBERPOINTS = "Nombre de points à afficher sur la carte des erreurs"
+HELPBENCHMARK = "Lance le benchmark sur un modèle, une base d'embeddings donnée, ses coordonnées et un test set (Paris datasets only !)"
 
 def main():
     parser = argparse.ArgumentParser(
@@ -195,6 +194,30 @@ def main():
         action='store_true',
         default=False,
         help=HELPFR)
+    ####################################################################################
+    ####################################################################################
+    benchmark_parser = subparsers.add_parser("benchmark", help=HELPBENCHMARK)
+    # Arguments positionnels (obligatoires)
+    benchmark_parser.add_argument(
+        "model_path",
+        type=str,
+        help=HELPMODEL
+    )
+    benchmark_parser.add_argument(
+        "embeds_coords_path",
+        type=str,
+        help=HELPEMBEDING
+    )
+    benchmark_parser.add_argument(
+        "coordinates_path",
+        type=str,
+        help=HELPCOORDINATES
+    )
+    benchmark_parser.add_argument(
+        "testset_folder",
+        type=str,
+        help=HELPDATASET
+    )
 
 ####################################################################################
 
@@ -351,6 +374,38 @@ def main():
             json_path=str(json_path.resolve()),
             embed_path=str(embed.resolve())
         )
+    elif args.subcommand == "benchmark":
+        model_path = Path(args.model_path)
+        embeds_coords_path = Path(args.embeds_coords_path)
+        coordinates_path = Path(args.coordinates_path)
+        testset_folder = Path(args.testset_folder)
+        
+        if not model_path.exists():
+            print(f"Erreur : Le fichier {model_path} n'existe pas.")
+            return
+
+        if not embeds_coords_path.exists():
+            print(f"Erreur : Le fichier {embeds_coords_path} n'existe pas.")
+            return
+
+        if not coordinates_path.exists():
+            print(f"Erreur : Le fichier {coordinates_path} n'existe pas.")
+            return
+
+        if not testset_folder.exists():
+            print(f"Erreur : Le dossier {testset_folder} n'existe pas.")
+            return
+
+        from src.benchmark import run_benchmark
+
+        run_benchmark(
+            str(coordinates_path.resolve()),
+            str(embeds_coords_path.resolve()),
+            str(testset_folder.resolve()),
+            str(model_path.resolve()),
+            args.cross
+        )
+
 
 if __name__ == "__main__":
     main()

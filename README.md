@@ -28,10 +28,31 @@ Inspired by the [GeoCLIP](https://arxiv.org/abs/2309.16020) architecture, our mo
 
 ### Quick Start
 
+Please adapt the "python" prefix with yours.
+
 Clone the repository and install the dependencies :
 
 ```sh
-py -m pip install tqdm torchvision numpy matplotlib opencv-python albumentations random-fourier-features-pytorch geopy gdown folium
+python -m pip install tqdm torchvision numpy matplotlib opencv-python albumentations random-fourier-features-pytorch geopy gdown folium
+```
+
+Benchmark a model :
+
+```bash
+python download_data.py download --type dataset paris_1k
+python download_data.py download --type model paris_50k
+python download_data.py download --type embeddings paris_50k
+python download_data.Py download --type coordinates paris_50k
+
+#Finally
+python main.py benchmark .\model_paris_50k.pt .\coordinates_paris_50k.json .\datasets\paris_1k\coordinates.json .\datasets\paris_1k --cross
+```
+
+Train a model :
+
+```bash
+python download_data.py download --type dataset paris_1k
+python .\main.py train 10 32 ./datasets/paris_1k
 ```
 
 ## For an even quicker start :
