@@ -42,10 +42,10 @@ Benchmark a model :
 python download_data.py download --type dataset paris_1k
 python download_data.py download --type model paris_50k
 python download_data.py download --type embeddings paris_50k
-python download_data.Py download --type coordinates paris_50k
+python download_data.py download --type coordinates paris_50k
 
 #Finally
-python main.py benchmark .\model_paris_50k.pt .\coordinates_paris_50k.json .\datasets\paris_1k\coordinates.json .\datasets\paris_1k --cross
+python main.py benchmark .\model_paris_50k.pt .\coordinates_paris_50k.json .\embeddings_paris_50k.pt. \datasets\paris_1k --cross
 ```
 
 Train a model :

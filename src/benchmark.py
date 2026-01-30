@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 import math
 from tqdm import tqdm
-from embed_database import get_closest
+from src.embed_database import get_closest
 from src.cross_view.model_cross import *
 from src.base.model import *
 from src.base.dataset import compat_transform, get_images_pos, get_images_paths
@@ -54,7 +54,6 @@ def run_benchmark(coords_path, imgs_path, embeds_coords_path, db_path, model_pat
     else:
         model = MixedEncoder().to(DEVICE)
     model.load_state_dict(torch.load(model_path, map_location=DEVICE))
-    model = model.base_encoder
     model.eval()
 
     db = load_database(db_path)

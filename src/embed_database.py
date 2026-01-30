@@ -90,19 +90,6 @@ def create_embeddings(model, data_path, json_path):
     db = create_database(imgs, pos, model)
     torch.save(db, "embeddings_db.pt")
 
-
-def tsne(embeding_path, json_path):
-    pos = get_images_pos(json_path)
-    visualize_tsne(embeding_path, pos_dict=pos)
-
-
-def pca(embeding_path):
-    visualize_pca(embeding_path)
-
-def pca_geo(embeding_path, json_path):
-    pos = get_images_pos(json_path)
-    compare_pca_geo(embeding_path, pos_dict=pos)
-
 def use_model(model, embeding_path, image_path):
     a = torch.load(embeding_path, weights_only=False)
 
