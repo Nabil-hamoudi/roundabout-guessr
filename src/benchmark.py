@@ -36,13 +36,13 @@ def load_database(path):
     
     return data
 
-def run_benchmark(coords_path, embeds_coords_path, db_path, model_path, is_cross=True):
+def run_benchmark(coords_path, imgs_path, embeds_coords_path, db_path, model_path, is_cross=True):
     print("--- Démarrage du Benchmark ---")
 
     print("Chargement des listes images et positions...")
     pos_list = get_images_pos(coords_path) 
     embeds_pos_list = get_images_pos(embeds_coords_path)
-    img_paths = get_images_paths()
+    img_paths = get_images_paths(imgs_path)
 
     if len(pos_list) != len(img_paths):
         min_len = min(len(pos_list), len(img_paths))

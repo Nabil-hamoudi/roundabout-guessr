@@ -166,9 +166,9 @@ def main():
         help=HELPEMBEDING
     )
     benchmark_parser.add_argument(
-        "coordinates_path",
+        "embeddings_path",
         type=str,
-        help=HELPCOORDINATES
+        help=HELPEMBEDING
     )
     benchmark_parser.add_argument(
         "testset_folder",
@@ -273,12 +273,16 @@ def main():
             str(coordinates.resolve())
         )
     elif args.subcommand == "benchmark":
+        coordinates_path = Path(args.testset_folder).joinpath("coordinates.json")
+        images_path = Path(args.testset_folder).joinpath("img")
+        sat_path = Path(args.testset_folder).joinpath("sat")
+        
         model_path = Path(args.model_path)
         embeds_coords_path = Path(args.embeds_coords_path)
-        coordinates_path = Path(args.coordinates_path)
-        testset_folder = Path(args.testset_folder)
 
-        if not check_paths_exist(model_path, embeds_coords_path, coordinates_path, testset_folder):
+        embeds = Path(args.embeddings_path)
+
+        if not check_paths_exist(model_path, embeds_coords_path, coordinates_path, images_path, embeds):
             return
         
 
@@ -286,8 +290,9 @@ def main():
 
         run_benchmark(
             str(coordinates_path.resolve()),
+            str(images_path.resolve()),
             str(embeds_coords_path.resolve()),
-            str(testset_folder.resolve()),
+            str(embeds.resolve()),
             str(model_path.resolve()),
             args.cross
         )
