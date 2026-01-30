@@ -99,7 +99,6 @@ def train_base(nb_epoch=NB_EPOCH, batch_size=BATCH_SIZE, batch_combined=BATCH_CO
 
                 accum_pred_img = []; accum_pred_pos = []; accum_scale = []; accum_pos_coords = []
                 batch_count = 0
-            break
 
         if batch_count > 0:
             loss = get_accumulated_loss(accum_pred_img, accum_pred_pos, accum_scale, accum_pos_coords)

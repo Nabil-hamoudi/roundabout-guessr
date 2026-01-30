@@ -117,7 +117,6 @@ def train_cross(nb_epoch=NB_EPOCH, batch_size=BATCH_SIZE, batch_combined=BATCH_C
 
                 accum_pred_img = []; accum_pred_pos = []; accum_scale = []; accum_pos_coords = []; accum_pred_sat = []
                 batch_count = 0
-            break
 
         if batch_count > 0:
             loss = get_accumulated_loss(accum_pred_img, accum_pred_pos, accum_pred_sat, accum_scale, accum_pos_coords)
