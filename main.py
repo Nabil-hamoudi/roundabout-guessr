@@ -3,6 +3,8 @@ import sys
 from pathlib import Path
 
 import torch
+
+
 DESCRIPTIONCLI = "CLI pour ensemble des applications"
 HELPSUBPARSER = 'Entrainement et lancement du modele'
 HELPTRAIN = "Entraîner le modèle"
@@ -21,9 +23,9 @@ HELPPCAGEO = "Visualiser le pca des embeddings avec les coordonnées géographiq
 HELPCROSS = 'Utiliser le modèle cross-view'
 HELPCOORDINATES = "Chemin vers le fichier des coordonnées"
 HELPFR = "Utiliser les coordonnées de la France pour normaliser"
-
-LAT_MIN_F, LAT_MAX_F = 41.3, 51.1
-LON_MIN_F, LON_MAX_F = -5.1, 9.6
+HELPSPIDER = "Génére la carte des erreurs pour un modele entrainer et un dataset donné"
+HELPCARTEOUTPUT = "Chemin vers le fichier de sortie de la carte en html"
+HELPNUMBERPOINTS = "Nombre de points à afficher sur la carte des erreurs"
 
 def main():
     parser = argparse.ArgumentParser(
@@ -146,46 +148,53 @@ def main():
         default=False,
         help=HELPFR)
 ####################################################################################
-    pca = subparsers.add_parser("pca", help=HELPPCA)
+####################################################################################
 
-    pca.add_argument(
+    spider_view = subparsers.add_parser("spider_view", help=HELPUSEMODEL)
+
+    # Arguments positionnels (obligatoires)
+
+    spider_view.add_argument(
+        "number_points",
+        type=int,
+        help=HELPNUMBERPOINTS
+    )
+
+    spider_view.add_argument(
+        "model_path",
+        type=str,
+        help=HELPMODEL
+    )
+
+    spider_view.add_argument(
         "embed_path",
         type=str,
         help=HELPEMBEDING
     )
-####################################################################################
-####################################################################################
-    pcageo = subparsers.add_parser("pca_geo", help=HELPPCAGEO)
-
-    # Arguments positionnels (obligatoires)
-    pcageo.add_argument(
+    spider_view.add_argument(
         "dataset_folder",
         type=str,
         help=HELPDATASET
     )
-
-    pcageo.add_argument(
-        "embed_path",
+    spider_view.add_argument(
+        "carte_output",
         type=str,
-        help=HELPEMBEDING
+        help=HELPCARTEOUTPUT
     )
-
-####################################################################################
-####################################################################################
-    tsne = subparsers.add_parser("tsne", help=HELPTSNE)
-
-    # Arguments positionnels (obligatoires)
-    tsne.add_argument(
-        "dataset_folder",
-        type=str,
-        help=HELPDATASET
+    spider_view.add_argument(
+        '-c',
+        '--cross',
+        action='store_true',
+        default=False,
+        dest="cross",
+        help=HELPCROSS
     )
-
-    tsne.add_argument(
-        "embed_path",
-        type=str,
-        help=HELPEMBEDING
-    )
+    spider_view.add_argument(
+        '-fr',
+        '--france',
+        action='store_true',
+        default=False,
+        help=HELPFR)
 
 ####################################################################################
 
@@ -221,7 +230,7 @@ def main():
                     return
                 from src.cross_view import train_cross
                 train_cross.train_cross(
-                nb_epoch=args.nb_epoch,
+                nb_epoch=args.nb_epoch+1,
                 batch_size=args.batch_size,
                 batch_combined=batch_combined,
                 data_json=str(json_path.resolve()),
@@ -232,7 +241,7 @@ def main():
         else:
             from src.base import train_base
             train_base.train_base(
-                nb_epoch=args.nb_epoch,
+                nb_epoch=args.nb_epoch+1,
                 batch_size=args.batch_size,
                 batch_combined=batch_combined,
                 data_json=str(json_path.resolve()),
@@ -255,26 +264,10 @@ def main():
         if not model_path.exists():
             print(f"Erreur : Le fichier {model_path} n'existe pas.")
             return
-        from src import embed_database
+        from src.embed_database import init_model, create_embeddings
 
-        if args.cross:
-            from src.cross_view import model_cross
-            if args.france:
-                r_model = model_cross.CrossEncoder(LAT_MIN=LAT_MIN_F, LAT_MAX=LAT_MAX_F, LON_MIN=LON_MIN_F, LON_MAX=LON_MAX_F).to(embed_database.DEVICE)
-            else:
-                r_model = model_cross.CrossEncoder().to(embed_database.DEVICE)
-        else:
-            from src.base import model
-            if args.france:
-                r_model = model.MixedEncoder(LAT_MIN=LAT_MIN_F, LAT_MAX=LAT_MAX_F, LON_MIN=LON_MIN_F, LON_MAX=LON_MAX_F).to(embed_database.DEVICE)
-            else:
-                r_model = model.MixedEncoder().to(embed_database.DEVICE)
-        r_model.load_state_dict(torch.load(str(model_path.resolve())))
-        print(f"Dataset : {Path(args.dataset_folder)}")
-        print(f"Model : {model_path}")
-
-        embed_database.create_embeddings(
-            r_model,
+        create_embeddings(
+            init_model(model_path, args.cross, args.france),
             str(images_path.resolve()),
             str(json_path.resolve())
         )
@@ -299,87 +292,65 @@ def main():
         if not model_path.exists():
             print(f"Erreur : Le fichier {model_path} n'existe pas.")
             return
+        from src.embed_database import init_model, get_closest_locations
 
-        print(f"Embeddings : {embed}")
-        print(f"Model : {model_path}")
-        print(f"Image : {image}")
-        from src import embed_database
-
-        if args.cross:
-            from src.cross_view import model_cross
-            if args.france:
-                r_model = model_cross.CrossEncoder(LAT_MIN=LAT_MIN_F, LAT_MAX=LAT_MAX_F, LON_MIN=LON_MIN_F, LON_MAX=LON_MAX_F).to(embed_database.DEVICE)
-            else:
-                r_model = model_cross.CrossEncoder().to(embed_database.DEVICE)
-        else:
-            from src.base import model
-            if args.france:
-                r_model = model.MixedEncoder(LAT_MIN=LAT_MIN_F, LAT_MAX=LAT_MAX_F, LON_MIN=LON_MIN_F, LON_MAX=LON_MAX_F).to(embed_database.DEVICE)
-            else: 
-                r_model = model.MixedEncoder().to(embed_database.DEVICE)
-        r_model.load_state_dict(torch.load(str(model_path.resolve())))
 
         print(f"Model : {model_path}")
         print(f"Embeddings : {embed}")
         print(f"Image : {image}")
 
-        embed_database.get_closest_locations(
-            r_model,
+        get_closest_locations(
+            init_model(str(model_path.resolve()), args.cross, args.france),
             str(embed.resolve()),
             str(image.resolve()),
             str(coordinates.resolve())
         )
 
-    elif args.subcommand in "tsne":
-        json_path = Path(args.dataset_folder).joinpath("coordinates.json")
+
+    elif args.subcommand == "spider_view":
         embed = Path(args.embed_path)
-        if not embed.exists():
-            print(f"Erreur : Le fichier {embed} n'existe pas.")
+        json_path = Path(args.dataset_folder).joinpath("coordinates.json")
+        images_path = Path(args.dataset_folder).joinpath("img")
+        model_path = Path(args.model_path)
+        carte_output = Path(args.carte_output)
+        if not images_path.exists():
+            print(f"Erreur : Le dossier {images_path} n'existe pas.")
             return
 
         if not json_path.exists():
             print(f"Erreur : Le fichier {json_path} n'existe pas.")
             return
 
-        print(f"Dataset : {Path(args.dataset_folder)}")
-        print(f"Embeddings : {embed}")
-
-        embed_database.tsne(
-            embed,
-            json_path
-        )
-
-    elif args.subcommand in "pca_geo":
-        json_path = Path(args.dataset_folder).joinpath("coordinates.json")
-        embed = Path(args.embed_path)
         if not embed.exists():
             print(f"Erreur : Le fichier {embed} n'existe pas.")
             return
 
-        if not json_path.exists():
-            print(f"Erreur : Le fichier {json_path} n'existe pas.")
+        if not model_path.exists():
+            print(f"Erreur : Le fichier {model_path} n'existe pas.")
+            return
+        
+        if not model_path.exists():
+            print(f"Erreur : Le fichier {model_path} n'existe pas.")
             return
 
         print(f"Dataset : {Path(args.dataset_folder)}")
+        print(f"Json file : {str(json_path.resolve())}")
+        print(f"Number of points : {args.number_points}")
+        print(f"Carte output : {carte_output}")
         print(f"Embeddings : {embed}")
+        print(f"Model : {model_path}")
 
-        embed_database.pca_geo(
-            embed,
-            json_path
+        from src.embed_database import init_model
+        from src.visu_spider import run_spider_map
+
+        run_spider_map(
+            init_model(str(model_path.resolve()), args.cross, args.france),
+            max_points=args.number_points,
+            output_file=str(carte_output.resolve()),
+            data_dir=str(images_path.resolve()),
+            json_path=str(json_path.resolve()),
+            embed_path=str(embed.resolve())
         )
-
-    elif args.subcommand in "pca":
-        embed = Path(args.embed_path)
-        if not embed.exists():
-            print(f"Erreur : Le fichier {embed} n'existe pas.")
-            return
-
-        print(f"Embeddings : {embed}")
-
-        embed_database.pca(
-            embed
-        )
-
 
 if __name__ == "__main__":
     main()
