@@ -36,13 +36,21 @@ MODELS = {
     "paris_50k" : {
         "id" : "1tcvvOx-qeKgNDOw9BItXGN3eOlYzIB1_",
         "output" : "model_paris_50k.pt"
-    }
+    },
+    "paris_100k" : {
+        "id" : "1UjKgMk25QQ4ZrZUajCCcrtnj9NNXNq3v",
+        "output" : "model_paris_100k.pt"
+    },
 }
 
 EMBEDDINGS = {
     "paris_50k" : {
         "id": "10chFS8j1vi3LKs4luc_EJiBSthro-jtt",
         "output": "embeddings_paris_50k.pt"
+    },
+    "paris_100k" : {
+        "id" : "1wE7nu2AtD3lpACEsIhNgUXEKzhjKXOke",
+        "output" : "embeddings_paris_100k.pt"
     }
 }
 
