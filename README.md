@@ -312,29 +312,29 @@ The Recall strategy takes the point with the best similarity.
 
 A benchmark run with the same Recall strategy using Paris_1k as the test set gives :
 
-> **Mean Error**        : 3045.69 m
-> **Median Error**      : 141.47 m
+> **Mean Error**        : 3045.69 m  
+> **Median Error**      : 141.47 m 
 >
-> **Precision @ 10km**  : 87.50%
-> **Precision @ 2km**  : 66.50%
-> **Precision @ 1km**  : 61.40%
-> **Precision @ 500m**  : 57.90%
-> **Precision @ 200m**  : 52.20%
-> **Precision @ 100m**  : 47.20%
-> **Precision @ 25m**  : 30.40%
+> **Precision @ 10km**  : 87.50%  
+> **Precision @ 2km**  : 66.50%  
+> **Precision @ 1km**  : 61.40%  
+> **Precision @ 500m**  : 57.90%  
+> **Precision @ 200m**  : 52.20%  
+> **Precision @ 100m**  : 47.20%  
+> **Precision @ 25m**  : 30.40%  
 
 The difference between the Mean Error and the Median Error can be interpreted as the confusion of the model : when he knows he can pinpoint the location, but when he don't he can't pinpoint a good heuristic. This argument can be taken further by using the same benchmark run but using a Recall strategy where we take the closest point within the 5 closest (which is not usable in a real use case) :
 
-> **Mean Error**    : 990.55 m
-> **Median Error**  : 50.72 m
+> **Mean Error**    : 990.55 m  
+> **Median Error**  : 50.72 m  
 >
-> **Precision @ 10km**  : 98.40%
-> **Precision @ 2km**  : 85.60%
-> **Precision @ 1km**  : 77.80%
-> **Precision @ 500m**  : 72.20%
-> **Precision @ 200m**  : 65.30%
-> **Precision @ 100m**  : 59.00%
-> **Precision @ 25m**  : 35.60%
+> **Precision @ 10km**  : 98.40%  
+> **Precision @ 2km**  : 85.60%  
+> **Precision @ 1km**  : 77.80%  
+> **Precision @ 500m**  : 72.20%  
+> **Precision @ 200m**  : 65.30%  
+> **Precision @ 100m**  : 59.00%  
+> **Precision @ 25m**  : 35.60%  
 
 Mean Error is a lot closer to what one can expect, and the model Recall curve is a lot smoother.
 This actually gives a motivation to create heuristics about what point one should take from the kNN, as it may boost stability at a minimal performance cost.
