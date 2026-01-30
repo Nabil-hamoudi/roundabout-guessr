@@ -6,6 +6,8 @@
 
 **Position Guessr** is a Deep Learning project aiming to retrieve the precise geographical coordinates (latitude, longitude) of a location based on a street-level photograph.
 
+We focus on geolocalisation in the Parisian Region, but France if using an appropriate dataset.
+
 Inspired by the [GeoCLIP](https://arxiv.org/abs/2309.16020) architecture, our model aligns visual features (from streetview images and satellites images) with spatial features (coordinates) using Contrastive Learning.
 
 ## ⚙️ Installation
@@ -41,6 +43,23 @@ Use our [google colab demo](https://colab.research.google.com/drive/1z9V7xi33NAn
 The project is designed to be run through a CLI, here it is main.py.
 
 Across the CLI the `--cross` (or `-c`) option is to use the cross-view model, note that you then need a dataset with satellies views. The `--france` (or `-c`) option is to tell the model that you are in a national context and not focused on Paris.
+
+#### 0. Downloading data
+
+Please use download_data.py to retrieve datasets, pretrained models and pretrained embeddings.
+
+```python
+python download_data.py [-h] {list,download}
+
+# Example (Get the list of downloadable objects)
+python download_data.py list
+
+# Example (Downloading Paris 1K) 
+python download_data.py download --type dataset paris_1k
+
+# Example (Downloading Paris 50K pre-trained model)
+ .\download_data.py download --type model paris_50k
+```
 
 #### 1. Training
 
@@ -225,7 +244,6 @@ graph LR
     V_I & V_S & V_L -.-> LOSS
 ```
 
-
 ## 💾 Datasets
 
 > Our data is scraped from Google Street View. Each dataset must contain a `coordinates.json` file and an image folder. We pick random coordinates in certain places and use the library *streetlevel* to get the Google Panorama ID and image.
@@ -235,10 +253,12 @@ graph LR
 ### Available Datasets
 
 * **France (Urban Focus):** 70k images from french 50 cities. [Download](https://drive.google.com/file/d/1VElOIWDLL83oL-OrIfO-i7G07vkbTfpn/view?usp=sharing)
-* **France (Global):** 300k images randomized across the country. [Download](https://drive.google.com/file/d/1PQ7r9Ijj5XKESN2vsECv_YgFcfE7xzAh/view?usp=sharing)
+* **France :** 300k images randomized across the country. [Download](https://drive.google.com/file/d/1PQ7r9Ijj5XKESN2vsECv_YgFcfE7xzAh/view?usp=sharing)
 * **Paris 50K :** 50K images randomized across the Parisian Region (includes Satellite views). [Download](https://drive.google.com/file/d/1Ht602iXoHgHuJ9hNJh9biDCdQwxGDzPH/view?usp=drive_link)
+* Paris 100K : Using Paris 50K as a base we added 50K more image (also includes Satellite views). [Download](https://drive.google.com/file/d/1_J98Wfn-7yjhDlurKxnA5QkM0dTYcKUS/view?usp=sharing)
+* Paris 1K : 1K image of the Parisian Region, can be used as a test set for benchmarking or as quick way to test training. [Download](https://drive.google.com/file/d/1ulp6vD-rpDRm-rYo6CirefnI23k5ZImk/view?usp=sharing)
 
-Note that Paris 50K dataset, model and embeddings are trained using satellite images and then need the `--cross` (or `-c`) option in the CLI.
+Note that Paris 50K/100K datasets, models and embeddings are trained/generated using satellite images and then need the `--cross` (or `-c`) option in the CLI.
 
 > Every dataset folder indeed needs to have a coordinates.json (detailed below), a folder named "img" where the streetview images are and optionally a "sat" folder where the corresponding satellite images goes.
 >
@@ -257,7 +277,7 @@ Note that Paris 50K dataset, model and embeddings are trained using satellite im
 
 Paris 50K model we stopped early : [Download](https://drive.google.com/file/d/1tcvvOx-qeKgNDOw9BItXGN3eOlYzIB1_/view?usp=sharing)
 
-## 📊 Results (Performance)
+## 📊 Results
 
 Here are the retrieval results on our validation set (Paris 50K dataset) after 13 epochs:
 
