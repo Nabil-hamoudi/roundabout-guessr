@@ -6,7 +6,7 @@ import torch.nn.functional as F
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 DEVICE_STR = "cuda" if torch.cuda.is_available() else "cpu"
 
-def model_validation(model, val_loader, distance_thresholds_km=[0.1, 0.25, 1, 2], has_sat = False):
+def model_validation(model, val_loader, distance_thresholds_km=[0.1, 0.25, 1, 2, 10, 100], has_sat = False):
     """
     Effectue la validation du modèle, calcule les embeddings pour tout le
     jeu de validation, puis calcule la matrice de similarité et les métriques
@@ -153,5 +153,7 @@ def validate_retrieval(model, clean_train_loader, val_loader):
     print(f"R@200m: {(dist_meters < 200).float().mean()*100:.1f}%")
     print(f"R@500m: {(dist_meters < 500).float().mean()*100:.1f}%") 
     print(f"R@1km : {(dist_meters < 1000).float().mean()*100:.1f}%") 
+    print(f"R@10km : {(dist_meters < 10000).float().mean()*100:.1f}%") 
+    print(f"R@100km : {(dist_meters < 100000).float().mean()*100:.1f}%") 
     
     return median_error
