@@ -54,8 +54,6 @@ def run_error_map(r_model):
     print(f"--- Génération Carte des Erreurs ({MAXPOINT} points) ---")
 
     # 1. Chargement JSON
-    print("ici test")
-    print(JSON_PATH)
     if not os.path.exists(JSON_PATH):
         print(f"JSON introuvable")
         return
