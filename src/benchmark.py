@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 import math
 from tqdm import tqdm
+from embed_database import get_closest
 from src.cross_view.model_cross import *
 from src.base.model import *
 from src.base.dataset import compat_transform, get_images_pos, get_images_paths
@@ -68,17 +69,12 @@ def run_benchmark(coords_path, embeds_coords_path, db_path, model_path, is_cross
         img = cv2.imread(img_path, cv2.IMREAD_COLOR)
         if img is None: continue
 
-        t_img = compat_transform(image=img)["image"].to(DEVICE).unsqueeze(0)
-
-        with torch.no_grad():
-            query_vec = model.image_encoder(t_img).detach().cpu().numpy()
-
-        res = db.find_elem(query_vec, top_k=1)
+        res = get_closest(db, img, model, k=1)
         
         if not res:
             continue
 
-        pred_id = res[0]["id"]
+        pred_id = res[0][0]
 
         pred_pos = embeds_pos_list[pred_id] # [Lat, Lon]
 

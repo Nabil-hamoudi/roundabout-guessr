@@ -61,11 +61,8 @@ class CrossDataset(Dataset):
         self.train_transform = A.Compose([
             A.Resize(518, 518),
             A.Compose([
-                # Brightness très léger pour gérer l'exposition caméra sans changer le climat
                 A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=0.5),
                 
-                # Hue INTERDIT (ou quasi nul) pour ne pas changer la couleur des toits/sols
-                # Saturation légère pour gérer les vieux capteurs
                 A.HueSaturationValue(hue_shift_limit=0, sat_shift_limit=10, val_shift_limit=10, p=0.3),
             ], p=0.7),
                     

@@ -272,6 +272,25 @@ def main():
             str(image.resolve()),
             str(coordinates.resolve())
         )
+    elif args.subcommand == "benchmark":
+        model_path = Path(args.model_path)
+        embeds_coords_path = Path(args.embeds_coords_path)
+        coordinates_path = Path(args.coordinates_path)
+        testset_folder = Path(args.testset_folder)
+
+        if not check_paths_exist(model_path, embeds_coords_path, coordinates_path, testset_folder):
+            return
+        
+
+        from src.benchmark import run_benchmark
+
+        run_benchmark(
+            str(coordinates_path.resolve()),
+            str(embeds_coords_path.resolve()),
+            str(testset_folder.resolve()),
+            str(model_path.resolve()),
+            args.cross
+        )
 
 
 if __name__ == "__main__":

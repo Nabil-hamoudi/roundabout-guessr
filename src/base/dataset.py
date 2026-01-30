@@ -58,21 +58,21 @@ class ImagesPosDataset(Dataset):
         self.noise_std = 0.0013  
         self.train_transform = A.Compose([
             A.Resize(518, 518),
-            A.ImageCompression(quality_lower=60, quality_upper=100, p=0.3),
             A.Compose([
-                A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.5),
-                A.HueSaturationValue(hue_shift_limit=10, sat_shift_limit=20, val_shift_limit=10, p=0.3),
-            ], p=0.8),
-            
+                A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=0.5),
+                
+                A.HueSaturationValue(hue_shift_limit=0, sat_shift_limit=10, val_shift_limit=10, p=0.3),
+            ], p=0.7),
+                    
             A.OneOf([
+                A.ImageCompression(quality_lower=70, quality_upper=100),
                 A.GaussianBlur(blur_limit=(3, 5)),
-                A.GaussNoise(var_limit=(10.0, 50.0)),
-                A.ISONoise(),
-            ], p=0.2),
+                A.GaussNoise(var_limit=(10.0, 30.0)),
+            ], p=0.3), 
 
             A.CoarseDropout(
-                max_holes=8, max_height=16, max_width=16, 
-                min_holes=1, min_height=8, min_width=8, 
+                max_holes=4, max_height=32, max_width=32, 
+                min_holes=1, min_height=16, min_width=16, 
                 fill_value=0, p=0.2
             ),
 
