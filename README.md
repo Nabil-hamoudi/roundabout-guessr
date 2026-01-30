@@ -105,7 +105,7 @@ python main.py placehold for Visualisation
 python main.py --help #To get infos about other commands, can also be applied to commands
 
 #Inference example using cross-view
-python main.py get_closest -c model_paris_50k.pt embeddings_paris_50k.pt ./test_img.jpg ./dataset/coordinates.jpg 
+python main.py get_closest -c model_paris_50k.pt embeddings_paris_50k.pt ./test_img.jpg ./dataset/coordinates.json
 ```
 
 ## 📂Project Structure
