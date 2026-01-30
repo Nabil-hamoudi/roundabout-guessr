@@ -58,7 +58,7 @@ python download_data.py list
 python download_data.py download --type dataset paris_1k
 
 # Example (Downloading Paris 50K pre-trained model)
- .\download_data.py download --type model paris_50k
+python download_data.py download --type model paris_50k
 ```
 
 #### 1. Training
@@ -252,7 +252,7 @@ graph LR
 
 ### Available Datasets
 
-* **France (Urban Focus):** 70k images from french 50 cities. [Download](https://drive.google.com/file/d/1VElOIWDLL83oL-OrIfO-i7G07vkbTfpn/view?usp=sharing)
+* **France :** 70k images from french randomized around 50 cities. [Download](https://drive.google.com/file/d/1VElOIWDLL83oL-OrIfO-i7G07vkbTfpn/view?usp=sharing)
 * **France :** 300k images randomized across the country. [Download](https://drive.google.com/file/d/1PQ7r9Ijj5XKESN2vsECv_YgFcfE7xzAh/view?usp=sharing)
 * **Paris 50K :** 50K images randomized across the Parisian Region (includes Satellite views). [Download](https://drive.google.com/file/d/1Ht602iXoHgHuJ9hNJh9biDCdQwxGDzPH/view?usp=drive_link)
 * Paris 100K : Using Paris 50K as a base we added 50K more image (also includes Satellite views). [Download](https://drive.google.com/file/d/1_J98Wfn-7yjhDlurKxnA5QkM0dTYcKUS/view?usp=sharing)

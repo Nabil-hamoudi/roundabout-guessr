@@ -130,7 +130,7 @@ def process_download(name, resource_type, keep_zip):
         target_dict = DATASETS
     elif resource_type == 'model':
         target_dict = MODELS
-    elif resource_type == 'embedding':
+    elif resource_type == 'embeddings':
         target_dict = EMBEDDINGS
     elif resource_type == 'coordinates':
         target_dict = COORDINATES
@@ -140,14 +140,14 @@ def process_download(name, resource_type, keep_zip):
         return
 
     conf = target_dict[name]
-    print(f"🚀 Traitement de {resource_type.upper()} : {name}")
+    print(f"Traitement de {resource_type.upper()} : {name}")
 
     file_path = download_from_gdrive(conf["id"], conf["output"])
     
     if file_path and resource_type == 'dataset':
         extract_zip(file_path, conf["extract_path"], delete_zip=not keep_zip)
     elif file_path:
-        print(f"✅ Fichier prêt : {file_path}")
+        print(f"Fichier prêt : {file_path}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Gestionnaire de téléchargement GDrive")
@@ -159,7 +159,7 @@ if __name__ == "__main__":
     dl_parser.add_argument('name', type=str, help="Nom de la ressource (ex: paris_50k)")
     
     dl_parser.add_argument('--type', type=str, required=True, 
-                           choices=['dataset', 'model', 'embedding', 'coordinates'],
+                           choices=['dataset', 'model', 'embeddings', 'coordinates'],
                            help="Le type de ressource à télécharger")
     
     dl_parser.add_argument('--keep-zip', action='store_true', help="Garder le zip après extraction (datasets uniquement)")
