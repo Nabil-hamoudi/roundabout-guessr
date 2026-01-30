@@ -1,149 +1,158 @@
-# Position Guesseur
+# 🥐🗼 Position Guessr  ![Python](https://img.shields.io/badge/python-3.14-blue.svg) ![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-ee4c2c.svg)
 
-*Alexandre DUCROS, Nabil HAMOUDI*
+**Authors**: Alexandre DUCROS, Nabil HAMOUDI
 
-## Presentation
+## 📝 Overview
 
-- Machine Learning project starting from december 2025 to January 2026.
-- The objective of this project is to retrieve the coordinates of where a photo was taken.
+**Position Guessr** is a Deep Learning project aiming to retrieve the precise geographical coordinates (latitude, longitude) of a location based solely on a street-level photograph.
 
-### Requirement
+Inspired by the [GeoCLIP](https://arxiv.org/abs/2309.16020) architecture, our model aligns visual features (from streetview images and satellites images) with spatial features (coordinates) using Contrastive Learning.
 
-> Python 3.14.2 tqdm
+## ⚙️ Installation
 
-#### Model Training
+### Requirements
 
-> torch torchvision numpy matplotlib opencv-python albumentations random-fourier-features-pytorch geopy
+- Python 3.14+
+- CUDA-capable GPU (Recommended for training)
+- Pytorch installed
 
-#### DataSet Scraping
+#### Essential dependencies (other than Pytorch)
+
+> torchvision numpy matplotlib opencv-python albumentations random-fourier-features-pytorch geopy gdown
+
+#### Scraping dependencies
 
 > streetlevel
 
-## Quick install
+### Quick Start
+
+Clone the repository and install the dependencies :
 
 ```sh
-py -m pip install tqdm torch torchvision numpy matplotlib opencv-python albumentations random-fourier-features-pytorch geopy
+py -m pip install tqdm torchvision numpy matplotlib opencv-python albumentations random-fourier-features-pytorch geopy gdown folium
 ```
 
-## Operation
+### For an even quicker start :
+
+Use our [demo](https://colab.research.google.com/drive/1z9V7xi33NAnsBgNWSKV_DYNNnzjHAKVb?usp=sharing) ! It has a dataset downloaded, a trained model, generated embeddings. Life is good !
+
+## 🚀 Usage
+
+The project is designed to be run through a CLI, here it is main.py.
+
+Across the CLI the `--cross` (or `-c`) option is to use the cross-view model, note that you then need a dataset with satellies views. The `--france` (or `-c`) option is to tell the model that you are in a national context and not focused on Paris.
+
+#### 1. Training
+
+To train the model on a specific dataset. Use `batch_combined` (or `bc`) to simulate large batches on limited VRAM. Note that it still use heavy amount on VRAM and that 12 to 16Gb are recommanded to train the model.
+
+```
+python main.py train [-bc BATCH_ACCUMULATION] <epochs> <batch_size> <dataset_path>
+
+# Example (Training the Base Model)
+python main.py train -bc 256 150 32 ./dataset/paris
+
+# Example (Training the Cross View Model)
+python main.py train -bc 256 150 32 ./dataset/paris --cross
+```
+
+#### 2. Inference & Visualisation
+
+```bash
+python main.py get_closest [-c] [-fr] model_path embed_path image_path coordinates_path #Inference
+python main.py gen_gallery [-c] [-fr] model_path dataset_folder #Embed database generation
+python main.py placehold for Visualisation
+python main.py --help #To get infos about other commands, can also be applied to commands
+
+#Inference example using cross-view
+python main.py get_closest -c model_paris_50k.pt embeddings_paris_50k.pt ./test_img.jpg ./dataset/coordinates.jpg 
+```
+
+## 📂Project Structure
 
 ```
 Position Guesseur
-│   README.md
-│   main.py  
+├── main.py                     # CLI Entry point
+├── src/
+│   ├── base/                   # Standard Model (Image <-> Location)
+│   │   ├── dataset.py
+│   │   ├── model.py
+│   │   └── train_base.py
+│   │
+│   ├── cross_view/             # Cross-View Model (+ Satellite)
+│   │   ├── dataset_cross.py
+│   │   ├── model_cross.py
+│   │   └── train_cross.py
+│   │
+│   ├── model_components/       # Shared Architectures
+│   │   ├── image_encoder.py    # DINOv2 backbone + Adapters
+│   │   └── location_encoder.py # RFF + ResMLP
+│   │
+│   ├── embed_database.py       # Embedding generation & Visu
+│   ├── training_utils.py       # Loss function & Dataset splitting
+│   ├── validation_utils.py     # Validation execution
+|   └── visu_spider.py          # Spider thread like visualisation of predicted position
+|   
 │
-└───src\
-│   │   dataset.py
-│   │   embed_database.py
-│   │   model.py
-│   │   train_clip.py
-│   │ 
-│   └───cross\
-│       │   dataset_cross.py
-│       │   model_cross.py
-│       │   train_cross.py
-│  
-└───dataset\  
-    │   coordinates.json
-    │
-    └───data_sat\ [OPTIONAL]
-    │    │ sat_0.jpg
-    │    │ dat_1.jpg
-    │    │ ...
-    │  
-    └───data\
-        │ img_0.jpg
-        │ img_1.jpg
-        │ ...
+└── dataset/                    # Data storage
+    ├── coordinates.json        # Labels and Metadata
+    ├── img/                   # Street View Images
+    └── sat/               # Satellite Images (Optional, obligatory for cross-view)
 ```
 
-- *main.py* : CLI to use our model, handle training, and generate all embeddings.
-- *model.py* : Training of the model; generates *model_x.pt* at every epoch.
-- *embed_database.py* : Generation and visualization of embeddings.
-  - *We can visualize via t-SNE, PCA, and PCA combined with geographical data*
-- *dataset\\* : Contains the dataset with *coordinates.json*, *data\\* (images) and *data_sat\\* (satellite images) this images are use for cross model there are optional. This folder does not exist in the repo but is expected here for certains application.
-- *cross\\* : Contains the code for cross model.
+## 🧠 Methodology
 
-## Dataset
+Our approach relies on **Deep Metric Learning**:
 
-> Our dataset is scraped from Google Street View. We pick random coordinates in certain places and use the library *streetlevel* to get the Google Panorama ID.
-> With each panorama ID, we retrieve the panorama image and extract images from any angle we want.
+1. **Image Encoder:** We use **DINOv2 (Small)** frozen weights with trainable adapters to extract semantic features from streetview images and satellite images.
+2. **Location Encoder:** We use **Random Fourier Features (RFF)** to map 2D GPS coordinates into a high-dimensional space. This structures the encoder as a **Neural Feature Field**, enabling the model to learn high-frequency spatial details rather than smooth global trends.
+3. **Loss Function:** We utilize a **Masked InfoNCE Loss**.
+   * It maximizes similarity between an image and its location.
+   * It treats physically close locations (e.g., < 10m) as valid positives (masking) to avoid false negatives during contrastive learning.
 
-- All images have a corresponding entry in "coordinates.json" containing data/annotations.
+You can learn more about the architecture
 
-Using this method, we generated multiple datasets for testing and results. The scraped locations are:
+## 💾 Datasets
 
-- France
-  - Dataset: 70,000 images randomized, concentrated in the 50 biggest cities of France.
-    - https://drive.google.com/file/d/1YalWVF-CK_d6iy4c440gwfKzVtNhZHmN/view?usp=drive_link
-  - Dataset: 300,000 images randomized across all of France.
-    - https://drive.google.com/file/d/1m-bu9LzyZ_dO6VezFXGeoO7Kp5gZKqbe/view?usp=drive_link
-- Paris
-  - xxxxxxxxxx
-    - xxxxxxxxxx
+> Our data is scraped from Google Street View. Each dataset must contain a `coordinates.json` file and an image folder. We pick random coordinates in certain places and use the library *streetlevel* to get the Google Panorama ID and image.
 
-> Every dataset folder for our project must have a *coordinates.json* file and a *data\\* folder containing images named with the prefix *img_* followed by their *id* and *extension* (optionally the prefix *sat_* followed by their *id* and *extension* ). For each images we can have Satelite images in *data_sat\\* if we use the cross model.
+### Available Datasets
 
-- For example *img_0.jpg* (optionally *sat_0.jpg* the satelite image linked to it).
-  In *coordinates.json* for each image the data is formed this way:
+* **France (Urban Focus):** 70k images from french 50 cities. [Download](https://drive.google.com/file/d/1VElOIWDLL83oL-OrIfO-i7G07vkbTfpn/view?usp=sharing)
+* **France (Global):** 300k images randomized across the country. [Download](https://drive.google.com/file/d/1PQ7r9Ijj5XKESN2vsECv_YgFcfE7xzAh/view?usp=sharing)
+* **Paris 50K :** 50K images randomized across the Parisian Region (includes Satellite views). [Download](https://drive.google.com/file/d/1VElOIWDLL83oL-OrIfO-i7G07vkbTfpn/view?usp=drive_link)
+
+Note that Paris 50K dataset, model and embeddings are trained using satellite images and then need the `--cross` (or `-c`) option in the CLI.
+
+> Every dataset folder indeed needs to have a coordinates.json (detailled below), a folder named "img" where the streetview images are and optionally a "sat" folder where the corresponding satellite images goes.
+>
+> The id should be shared across the folders (even if the prefix_ is not the same).
 
 ```json
  "img_id :"{
-    "longitude": float,
-    "latitude": float,
-    "pano_id": string,
-    "sampled_lon": float,
-    "sampled_lat": float,
-    "view_direction": string,
-    "h_deg": integer,
-    "v_deg": integer
+    "longitude": float, // Longitude in EPSG:4326 system
+    "latitude": float, // Latitude in EPSG:4326 system
+    "pano_id": string, // ID of the streetview panorama
+    // other keys are not necessary for current models to run.
 }
 ```
 
+## 🤖 Models
 
-| Field            | Type    | Description                                          |
-| ---------------- | ------- | ---------------------------------------------------- |
-| `longitude`      | float   | Original longitude coordinate in EPSG:4326 system    |
-| `latitude`       | float   | Original latitude coordinate in EPSG:4326 system     |
-| `pano_id`        | string  | Google Street View panorama ID                       |
-| `sampled_lon`    | float   | Sampled longitude for processing in EPSG:4326 system |
-| `sampled_lat`    | float   | Sampled latitude for processing in EPSG:4326 system  |
-| `view_direction` | string  | Viewing direction (front/left/right/back)            |
-| `h_deg`          | integer | Horizontal angle in degrees [0 - 360]                |
-| `v_deg`          | integer | Vertical angle in degrees [0 - 360]                  |
+Paris 50K model we stopped early : [Download](https://drive.google.com/file/d/1tcvvOx-qeKgNDOw9BItXGN3eOlYzIB1_/view?usp=sharing)
 
-## CLI
+## 📊 Results (Performance)
 
-```sh
-python main.py <commande> [arguments]
-```
+Here are the retrieval results on our validation set (Paris 50K dataset) after 13 epochs:
 
-Every commands use an application of our project:
+- R@100m : 20%
+- R@250m : 23.77%
+- R@1km : 36.27%
+- R@2km : 45.80%
 
-- *train* : Train the model with a dataset folder.
-  - ```main.py train [-bc BATCH_COMBINED] nbr_epoch batch_size dataset_folder```
-    *BATCH_COMBINED* is used for instances with insufficient VRAM for larger batch sizes, as the batch size impacts loss calculations.
-- *embedgen* : Generate embeddings using a *model_file* and *dataset_folder*.
-- *model* : Use a *model_file* and *embed_file* to predict the coordinates of an image.
-- *pca* : Visualize the PCA from the embeddings
-- *pca_geo* : Visualize the PCA from the embeddings with geographiques coordinnates
-- *tsne* :  Visualize the TSNE from the embeddings
+With a median of 2.5km, outlying the ability of the model to anchor itself on distinct images (monuments), but having a hard time to differentiate similar streets. Note that this is only a 13 epochs training.
 
-> With the argument *cross* we can change the model we use between the base model and cross model.
+## 📚 References
 
-## Models
-
-We have generated differents models:
-
-- France
-  - Models with 70 000 images randomised concentrated in the 50 biggest city of France.
-    - xxxxxxxxxxxxxxxx
-- Paris
-  - xxxxxxxxxx
-    - xxxxxxxxxx
-
-The generated models vary; the model attached to Europe was part of a simpler method than France, and the ones from France are simpler again and dont use satelite images for the training.
-
-## Sources
-
-- Vicente Vivanco Cepeda, Gaurav Kumar Nayak and Mubarak Shah (2023). GeoCLIP: Clip-Inspired Alignment between Locations and Images for Effective Worldwide Geo-localization. https://arxiv.org/abs/2309.16020
+- **GeoCLIP:** Vicente Vivanco Cepeda, Gaurav Kumar Nayak and Mubarak Shah (2023). *GeoCLIP: Clip-Inspired Alignment between Locations and Images for Effective Worldwide Geo-localization.*[arXiv:2309.16020](https://arxiv.org/abs/2309.16020)
+- **DINOv2:** Oquab et al. (2023). *DINOv2: Learning Robust Visual Features without Supervision.*
