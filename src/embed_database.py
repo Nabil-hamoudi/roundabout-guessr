@@ -5,6 +5,10 @@ import torch.nn.functional as F
 from src.base.dataset import *
 from tqdm import tqdm
 import cv2
+
+LAT_MIN_F, LAT_MAX_F = 41.3, 51.1
+LON_MIN_F, LON_MAX_F = -5.1, 9.6
+
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 DEVICE_STR = "cuda" if torch.cuda.is_available() else "cpu"
 def create_database(imgs, pos, model):
@@ -301,3 +305,19 @@ def get_closest_locations(model, embeding_path, image_path, pos):
             
         except KeyError:
             print(f"ID {idx} non trouvé dans le fichier JSON des coordonnées.")
+
+def init_model(model_path, cross, france):
+    if cross:
+        from src.cross_view import model_cross
+        if france:
+            r_model = model_cross.CrossEncoder(LAT_MIN=LAT_MIN_F, LAT_MAX=LAT_MAX_F, LON_MIN=LON_MIN_F, LON_MAX=LON_MAX_F).to(DEVICE)
+        else:
+            r_model = model_cross.CrossEncoder().to(DEVICE)
+    else:
+        from src.base import model
+        if france:
+            r_model = model.MixedEncoder(LAT_MIN=LAT_MIN_F, LAT_MAX=LAT_MAX_F, LON_MIN=LON_MIN_F, LON_MAX=LON_MAX_F).to(DEVICE)
+        else: 
+            r_model = model.MixedEncoder().to(DEVICE)
+    r_model.load_state_dict(torch.load(model_path))
+    return r_model
