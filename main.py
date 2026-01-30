@@ -1,8 +1,6 @@
 import argparse
 from pathlib import Path
 
-
-
 DESCRIPTIONCLI = "CLI pour ensemble des applications"
 HELPSUBPARSER = 'Entrainement et lancement du modele'
 HELPTRAIN = "Entraîner le modèle"
