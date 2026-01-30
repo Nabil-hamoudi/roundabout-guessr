@@ -4,7 +4,7 @@
 
 ## 📝 Overview
 
-**Position Guessr** is a Deep Learning project aiming to retrieve the precise geographical coordinates (latitude, longitude) of a location based on a street-level photograph.
+**Position Guessr** is a Deep Learning project aiming to retrieve the precise geographical coordinates (latitude, longitude) of a location based on a street-level photograph. This project was developed as part of the Neural Network course of the M2 AMIS.
 
 We focus on geolocalisation in the Parisian Region, but France is supported using an appropriate dataset.
 
